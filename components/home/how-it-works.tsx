@@ -1,0 +1,61 @@
+import { UserPlus, Code2, Send, Trophy } from "lucide-react"
+
+const steps = [
+  {
+    icon: UserPlus,
+    title: "Register",
+    description: "Create your account and build your developer profile to showcase your skills.",
+  },
+  {
+    icon: Code2,
+    title: "Build",
+    description: "Join a hackathon, form or find a team, and start building your innovative solution.",
+  },
+  {
+    icon: Send,
+    title: "Submit",
+    description: "Submit your project before the deadline with documentation and a demo video.",
+  },
+  {
+    icon: Trophy,
+    title: "Win",
+    description: "Get your project judged by experts and win amazing prizes and recognition.",
+  },
+]
+
+export function HowItWorks() {
+  return (
+    <section className="border-b border-border bg-card py-20">
+      <div className="mx-auto max-w-7xl px-4 lg:px-8">
+        <div className="text-center">
+          <h2 className="text-3xl font-bold text-foreground">How It Works</h2>
+          <p className="mt-2 text-muted-foreground">
+            Your journey from idea to winning project in four simple steps
+          </p>
+        </div>
+
+        <div className="mt-16 grid gap-8 md:grid-cols-2 lg:grid-cols-4">
+          {steps.map((step, index) => (
+            <div key={step.title} className="relative">
+              {index < steps.length - 1 && (
+                <div className="absolute left-1/2 top-8 hidden h-0.5 w-full -translate-x-1/2 bg-gradient-to-r from-border via-primary/30 to-border lg:block" style={{ left: '75%' }} />
+              )}
+              <div className="flex flex-col items-center text-center">
+                <div className="relative">
+                  <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10">
+                    <step.icon className="h-8 w-8 text-primary" />
+                  </div>
+                  <div className="absolute -right-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
+                    {index + 1}
+                  </div>
+                </div>
+                <h3 className="mt-6 text-lg font-semibold text-foreground">{step.title}</h3>
+                <p className="mt-2 text-sm text-muted-foreground">{step.description}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  )
+}

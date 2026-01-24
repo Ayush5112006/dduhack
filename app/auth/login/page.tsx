@@ -53,8 +53,6 @@ export default function LoginPage() {
           ? "/admin/dashboard" 
           : role === "organizer" 
           ? "/organizer/dashboard" 
-          : role === "judge"
-          ? "/judge/dashboard"
           : "/dashboard"
         window.location.href = redirect
       } else {

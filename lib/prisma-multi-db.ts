@@ -40,7 +40,6 @@ export function getPrismaClient(role: UserRole): PrismaClient {
     case 'admin':
       return adminDb
     case 'participant':
-    case 'judge':
     default:
       return studentDb
   }

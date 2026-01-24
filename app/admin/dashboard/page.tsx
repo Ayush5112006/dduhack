@@ -31,6 +31,14 @@ import {
   Loader2,
   Trash2,
   Eye,
+  UserCheck,
+  UserX,
+  Ban,
+  CheckCircle2,
+  TrendingUp,
+  Activity,
+  Calendar,
+  DollarSign,
 } from "lucide-react"
 import { useToast } from "@/components/toast-provider"
 import Link from "next/link"
@@ -50,6 +58,7 @@ type AdminHackathon = {
   id: string
   title: string
   organizer: string
+  organizerId: string
   status: string
   category: string
   startDate: string
@@ -57,19 +66,43 @@ type AdminHackathon = {
   prizeAmount: number
   registrations: number
   submissions: number
+  createdAt: string
+}
+
+type ActivityLog = {
+  id: string
+  type: string
+  user: string
+  action: string
+  timestamp: string
+}
+
+type AnalyticsData = {
+  totalUsers: number
+  totalHackathons: number
+  totalSubmissions: number
+  totalPrizePool: number
+  userGrowth: number
+  hackathonGrowth: number
 }
 
 export default function AdminDashboardPage() {
   const [users, setUsers] = useState<AdminUser[]>([])
   const [hackathons, setHackathons] = useState<AdminHackathon[]>([])
+  const [activities, setActivities] = useState<ActivityLog[]>([])
+  const [analytics, setAnalytics] = useState<AnalyticsData | null>(null)
   const [loadingUsers, setLoadingUsers] = useState(true)
   const [loadingHackathons, setLoadingHackathons] = useState(true)
+  const [loadingActivities, setLoadingActivities] = useState(true)
   const [searchQuery, setSearchQuery] = useState("")
+  const [statusFilter, setStatusFilter] = useState("all")
   const { addToast } = useToast()
 
   useEffect(() => {
     fetchUsers()
     fetchHackathons()
+    fetchActivities()
+    fetchAnalytics()
   }, [])
 
   async function fetchUsers() {
@@ -112,6 +145,78 @@ export default function AdminDashboardPage() {
     }
   }
 
+  async function fetchActivities() {
+    setLoadingActivities(true)
+    try {
+      const res = await fetch("/api/admin/activities")
+      const data = await res.json()
+      if (res.ok) {
+        setActivities(data.activities || [])
+      }
+    } catch (error) {
+      console.error(error)
+    } finally {
+      setLoadingActivities(false)
+    }
+  }
+
+  async function fetchAnalytics() {
+    try {
+      const res = await fetch("/api/admin/analytics")
+      const data = await res.json()
+      if (res.ok) {
+        setAnalytics(data)
+      }
+    } catch (error) {
+      console.error(error)
+    }
+  }
+
+  async function toggleUserStatus(userId: string, currentStatus: string) {
+    const newStatus = currentStatus === "active" ? "suspended" : "active"
+    try {
+      const res = await fetch(`/api/admin/users/${userId}/status`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: newStatus }),
+      })
+
+      if (!res.ok) {
+        const data = await res.json()
+        addToast("error", data.error || "Failed to update status")
+        return
+      }
+
+      setUsers(users.map(u => u.id === userId ? { ...u, status: newStatus } : u))
+      addToast("success", `User ${newStatus === "active" ? "activated" : "suspended"}`)
+    } catch (error) {
+      console.error(error)
+      addToast("error", "Unable to update user status")
+    }
+  }
+
+  async function updateHackathonStatus(id: string, status: string) {
+    try {
+      const res = await fetch(`/api/admin/hackathons/${id}/status`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status }),
+      })
+
+      if (!res.ok) {
+        const data = await res.json()
+        addToast("error", data.error || "Failed to update status")
+        return
+      }
+
+      setHackathons(hackathons.map(h => h.id === id ? { ...h, status } : h))
+      addToast("success", `Hackathon status updated to ${status}`)
+    } catch (error) {
+      console.error(error)
+      addToast("error", "Unable to update hackathon status")
+    }
+  }
+
   async function deleteHackathon(id: string) {
     if (!confirm("Delete this hackathon? This action cannot be undone.")) return
 
@@ -128,27 +233,59 @@ export default function AdminDashboardPage() {
 
       setHackathons(hackathons.filter((h) => h.id !== id))
       addToast("success", "Hackathon deleted")
+      fetchActivities()
     } catch (error) {
       console.error(error)
       addToast("error", "Unable to delete hackathon")
     }
   }
 
-  const filteredUsers = users.filter((u) =>
-    u.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    u.email.toLowerCase().includes(searchQuery.toLowerCase())
-  )
+  const filteredUsers = users.filter((u) => {
+    const matchesSearch = u.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      u.email.toLowerCase().includes(searchQuery.toLowerCase())
+    const matchesStatus = statusFilter === "all" || u.status === statusFilter
+    return matchesSearch && matchesStatus
+  })
 
-  const filteredHackathons = hackathons.filter((h) =>
-    h.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    h.organizer.toLowerCase().includes(searchQuery.toLowerCase())
-  )
+  const filteredHackathons = hackathons.filter((h) => {
+    const matchesSearch = h.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      h.organizer.toLowerCase().includes(searchQuery.toLowerCase())
+    const matchesStatus = statusFilter === "all" || h.status === statusFilter
+    return matchesSearch && matchesStatus
+  })
+
+  const totalSubmissions = users.reduce((sum, u) => sum + (u.submissions || 0), 0)
+  const totalPrizePool = hackathons.reduce((sum, h) => sum + (h.prizeAmount || 0), 0)
 
   const stats = [
-    { title: "Total Users", value: users.length, icon: Users },
-    { title: "Active Hackathons", value: hackathons.filter((h) => h.status === "live").length, icon: Trophy },
-    { title: "Total Hackathons", value: hackathons.length, icon: FileText },
-    { title: "Participants", value: users.filter((u) => u.role === "participant").length, icon: Users },
+    { 
+      title: "Total Users", 
+      value: users.length, 
+      icon: Users,
+      trend: analytics?.userGrowth || 0,
+      description: "Platform users"
+    },
+    { 
+      title: "Active Hackathons", 
+      value: hackathons.filter((h) => h.status === "live").length, 
+      icon: Trophy,
+      trend: analytics?.hackathonGrowth || 0,
+      description: "Currently running"
+    },
+    { 
+      title: "Total Submissions", 
+      value: totalSubmissions, 
+      icon: FileText,
+      trend: 0,
+      description: "All time"
+    },
+    { 
+      title: "Prize Pool", 
+      value: `$${(totalPrizePool / 1000).toFixed(1)}K`, 
+      icon: DollarSign,
+      trend: 0,
+      description: "Total prizes"
+    },
   ]
 
   const formatDate = (value: string) => {
@@ -167,13 +304,22 @@ export default function AdminDashboardPage() {
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           {stats.map((stat) => (
             <Card key={stat.title} className="border-border bg-card">
-              <CardContent className="flex items-center gap-4 p-6">
-                <div className="rounded-lg bg-primary/10 p-3">
-                  <stat.icon className="h-6 w-6 text-primary" />
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div className="rounded-lg bg-primary/10 p-3">
+                    <stat.icon className="h-6 w-6 text-primary" />
+                  </div>
+                  {stat.trend !== 0 && (
+                    <Badge variant="outline" className="gap-1">
+                      <TrendingUp className="h-3 w-3" />
+                      {stat.trend > 0 ? '+' : ''}{stat.trend}%
+                    </Badge>
+                  )}
                 </div>
-                <div>
+                <div className="mt-4">
                   <p className="text-sm font-medium text-muted-foreground">{stat.title}</p>
-                  <p className="mt-1 text-2xl font-bold text-foreground">{stat.value}</p>
+                  <p className="mt-1 text-2xl font-bold text-foreground">{typeof stat.value === 'number' ? stat.value : stat.value}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">{stat.description}</p>
                 </div>
               </CardContent>
             </Card>
@@ -182,17 +328,24 @@ export default function AdminDashboardPage() {
 
         <Card className="mt-6 border-border bg-card">
           <CardHeader>
-            <CardTitle>Platform Management</CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle>Platform Management</CardTitle>
+              <Badge variant="outline" className="gap-2">
+                <Activity className="h-3 w-3" />
+                {activities.length} recent activities
+              </Badge>
+            </div>
           </CardHeader>
           <CardContent>
             <Tabs defaultValue="users" className="w-full">
               <TabsList>
                 <TabsTrigger value="users">Users</TabsTrigger>
                 <TabsTrigger value="hackathons">Hackathons</TabsTrigger>
+                <TabsTrigger value="activity">Activity Log</TabsTrigger>
               </TabsList>
 
-              <div className="mt-6">
-                <div className="relative">
+              <div className="mt-6 flex gap-3">
+                <div className="relative flex-1">
                   <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                   <Input
                     placeholder="Search..."
@@ -201,6 +354,18 @@ export default function AdminDashboardPage() {
                     onChange={(e) => setSearchQuery(e.target.value)}
                   />
                 </div>
+                <select
+                  className="rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                >
+                  <option value="all">All Status</option>
+                  <option value="active">Active</option>
+                  <option value="suspended">Suspended</option>
+                  <option value="live">Live</option>
+                  <option value="upcoming">Upcoming</option>
+                  <option value="past">Past</option>
+                </select>
               </div>
 
               <TabsContent value="users" className="mt-6">
@@ -220,6 +385,7 @@ export default function AdminDashboardPage() {
                           <TableHead>Status</TableHead>
                           <TableHead>Joined</TableHead>
                           <TableHead>Activity</TableHead>
+                          <TableHead className="text-right">Actions</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -235,7 +401,7 @@ export default function AdminDashboardPage() {
                             <TableCell>
                               <Badge
                                 variant={user.status === "active" ? "default" : "secondary"}
-                                className={user.status === "active" ? "bg-emerald-500/10 text-emerald-600" : ""}
+                                className={user.status === "active" ? "bg-emerald-500/10 text-emerald-600" : "bg-red-500/10 text-red-600"}
                               >
                                 {user.status}
                               </Badge>
@@ -243,6 +409,33 @@ export default function AdminDashboardPage() {
                             <TableCell className="text-muted-foreground">{formatDate(user.createdAt)}</TableCell>
                             <TableCell className="text-muted-foreground">
                               {user.registrations} regs • {user.submissions} subs
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button variant="ghost" size="icon">
+                                    <MoreHorizontal className="h-4 w-4" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  <DropdownMenuItem 
+                                    onClick={() => toggleUserStatus(user.id, user.status)}
+                                    className="gap-2"
+                                  >
+                                    {user.status === "active" ? (
+                                      <>
+                                        <Ban className="h-4 w-4" />
+                                        Suspend User
+                                      </>
+                                    ) : (
+                                      <>
+                                        <CheckCircle2 className="h-4 w-4" />
+                                        Activate User
+                                      </>
+                                    )}
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
                             </TableCell>
                           </TableRow>
                         ))}
@@ -307,6 +500,22 @@ export default function AdminDashboardPage() {
                                     </Link>
                                   </DropdownMenuItem>
                                   <DropdownMenuItem
+                                    onClick={() => updateHackathonStatus(hackathon.id, "live")}
+                                    className="gap-2"
+                                    disabled={hackathon.status === "live"}
+                                  >
+                                    <CheckCircle2 className="h-4 w-4" />
+                                    Mark as Live
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem
+                                    onClick={() => updateHackathonStatus(hackathon.id, "past")}
+                                    className="gap-2"
+                                    disabled={hackathon.status === "past"}
+                                  >
+                                    <Calendar className="h-4 w-4" />
+                                    Mark as Past
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem
                                     onClick={() => deleteHackathon(hackathon.id)}
                                     className="gap-2 text-destructive"
                                   >
@@ -320,6 +529,42 @@ export default function AdminDashboardPage() {
                         ))}
                       </TableBody>
                     </Table>
+                  </div>
+                )}
+              </TabsContent>
+
+              <TabsContent value="activity" className="mt-6">
+                {loadingActivities ? (
+                  <div className="flex items-center justify-center py-12">
+                    <Loader2 className="mr-2 h-5 w-5 animate-spin text-muted-foreground" />
+                    <p className="text-muted-foreground">Loading activities...</p>
+                  </div>
+                ) : activities.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-border bg-muted/30 px-8 py-12 text-center">
+                    <Activity className="h-12 w-12 text-muted-foreground" />
+                    <p className="text-lg font-semibold text-foreground">No recent activities</p>
+                    <p className="text-sm text-muted-foreground">Activity logs will appear here</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {activities.slice(0, 20).map((activity) => (
+                      <div 
+                        key={activity.id} 
+                        className="flex items-start gap-4 rounded-lg border border-border bg-card p-4"
+                      >
+                        <div className="rounded-full bg-primary/10 p-2">
+                          <Activity className="h-4 w-4 text-primary" />
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-sm font-medium text-foreground">
+                            <span className="font-semibold">{activity.user}</span> {activity.action}
+                          </p>
+                          <p className="mt-1 text-xs text-muted-foreground">
+                            {formatDate(activity.timestamp)} • {activity.type}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 )}
               </TabsContent>

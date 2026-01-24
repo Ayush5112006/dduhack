@@ -204,7 +204,7 @@ export default function NotificationsPage() {
                         {notification.message}
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        {notification.time}
+                        {new Date(notification.createdAt).toLocaleString()}
                       </p>
                     </div>
                     <div className="flex gap-2">

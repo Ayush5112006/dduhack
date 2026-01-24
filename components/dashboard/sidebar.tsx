@@ -17,6 +17,8 @@ import {
   FileText,
   Award,
   Menu,
+  UserPlus,
+  UserCircle,
 } from "lucide-react"
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
 
@@ -44,8 +46,10 @@ const adminLinks = [
   { name: "Overview", href: "/admin/dashboard", icon: LayoutDashboard },
   { name: "Approvals", href: "/admin/dashboard/approvals", icon: FileText },
   { name: "Users", href: "/admin/dashboard/users", icon: User },
+  { name: "Add Member", href: "/admin/dashboard/add-member", icon: UserPlus },
   { name: "Hackathons", href: "/admin/dashboard/hackathons", icon: Trophy },
   { name: "Reports", href: "/admin/dashboard/reports", icon: Bell },
+  { name: "Profile", href: "/admin/dashboard/profile", icon: UserCircle },
   { name: "Settings", href: "/admin/dashboard/settings", icon: Settings },
 ]
 
@@ -58,7 +62,7 @@ const judgeLinks = [
   { name: "Profile", href: "/judge/profile", icon: User },
 ]
 
-type DashboardType = "participant" | "organizer" | "admin" | "judge"
+type DashboardType = "participant" | "organizer" | "admin"
 
 export function DashboardSidebar({ type }: { type: DashboardType }) {
   const pathname = usePathname()
@@ -92,16 +96,12 @@ export function DashboardSidebar({ type }: { type: DashboardType }) {
     ? participantLinks 
     : type === "organizer" 
     ? organizerLinks 
-    : type === "judge"
-    ? judgeLinks
     : adminLinks
 
   const title = type === "participant" 
     ? "Dashboard" 
     : type === "organizer" 
     ? "Organizer" 
-    : type === "judge"
-    ? "Judge"
     : "Admin"
 
   // Get user initials safely

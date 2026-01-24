@@ -10,7 +10,7 @@ export interface Session {
   userId: string
   userEmail: string
   userName: string
-  userRole: "participant" | "organizer" | "admin" | "judge"
+  userRole: "participant" | "organizer" | "admin"
   loginTime: number
   expiresAt: number
 }
@@ -145,7 +145,11 @@ export async function destroySession(token?: string) {
     // Try to delete from all role databases
     for (const role of ["participant", "organizer", "admin"] as const) {
       const db = getPrismaClient(role)
-      await db.session.delete({ where: { token: resolvedToken } }).catch(() => {})
+      try {
+        await db.session.deleteMany({ where: { token: resolvedToken } })
+      } catch (error) {
+        // Session may not exist in this database, that's OK
+      }
     }
   }
   await clearTokenCookie()

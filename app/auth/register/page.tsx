@@ -54,8 +54,6 @@ export default function RegisterPage() {
           ? "/admin/dashboard" 
           : userRole === "organizer" 
           ? "/organizer/dashboard" 
-          : userRole === "judge"
-          ? "/judge/dashboard"
           : "/dashboard"
         window.location.href = redirect
       } else {

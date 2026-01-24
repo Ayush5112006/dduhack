@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
       userId: user.id,
       userEmail: user.email,
       userName: user.name,
-      userRole: user.role,
+      userRole: user.role as "participant" | "organizer" | "admin",
     })
 
     return NextResponse.json({

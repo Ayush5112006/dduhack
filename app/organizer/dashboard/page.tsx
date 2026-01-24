@@ -442,7 +442,11 @@ export default function OrganizerDashboard() {
                           <TableCell className="text-muted-foreground">
                             0
                           </TableCell>
-                          <TableCell className="text-muted-foreground">{hackathon.registrationDeadline}</TableCell>
+                          <TableCell className="text-muted-foreground">
+                            {hackathon.registrationDeadline instanceof Date 
+                              ? hackathon.registrationDeadline.toLocaleDateString() 
+                              : hackathon.registrationDeadline}
+                          </TableCell>
                           <TableCell>
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>

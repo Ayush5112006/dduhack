@@ -1,53 +1,24 @@
 "use client"
 
-import { useState } from "react"
 import { DashboardSidebar } from "@/components/dashboard/sidebar"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Input } from "@/components/ui/input"
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
-import { Search, Plus, MoreHorizontal, Eye, Edit, Trash2 } from "lucide-react"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { useRouter } from "next/navigation"
-
-const mockHackathons: Array<{
-  id: string
-  name: string
-  status: string
-  category: string
-  participants: number
-  submissions: number
-  deadline: string
-}> = []
+import { HackathonsList } from "@/components/organizer/hackathons-list"
 
 export default function HackathonsPage() {
-  const router = useRouter()
-  const [searchQuery, setSearchQuery] = useState("")
-  const [hackathons, setHackathons] = useState(mockHackathons)
-  const [selectedIds, setSelectedIds] = useState<string[]>([])
-  const [statusFilter, setStatusFilter] = useState("all")
-
-  const filteredHackathons = hackathons.filter((h) => {
-    const matchesSearch = h.name.toLowerCase().includes(searchQuery.toLowerCase())
-    const matchesStatus = statusFilter === "all" || h.status === statusFilter
-    return matchesSearch && matchesStatus
-  })
-
-  const handleSelectAll = () => {
-    if (selectedIds.length === filteredHackathons.length) {
+  return (
+    <div className="min-h-screen bg-background">
+      <DashboardSidebar type="organizer" />
+      <main className="ml-64 p-8">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-foreground">Manage Hackathons</h1>
+          <p className="mt-2 text-muted-foreground">
+            Create, edit, and manage all your hosted hackathons
+          </p>
+        </div>
+        <HackathonsList />
+      </main>
+    </div>
+  )
+}
       setSelectedIds([])
     } else {
       setSelectedIds(filteredHackathons.map(h => h.id))

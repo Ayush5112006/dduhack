@@ -60,6 +60,7 @@ export default function LoginPage() {
         body: JSON.stringify({
           email,
           password,
+          role: userRole,
           userName: email.split("@")[0],
           userRole,
         }),

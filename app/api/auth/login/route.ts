@@ -1,19 +1,22 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createSession } from "@/lib/session"
-import { prisma } from "@/lib/prisma"
+import { getPrismaClient } from "@/lib/prisma-multi-db"
 import bcrypt from "bcrypt"
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { email, password } = body
+    const { email, password, role } = body
 
     if (!email || !password) {
       return NextResponse.json({ error: "Email and password are required" }, { status: 400 })
     }
 
-    // Find user in database
-    const user = await prisma.user.findUnique({
+    // Get the appropriate database client based on role
+    const db = getPrismaClient(role || "participant")
+
+    // Find user in role-specific database
+    const user = await db.user.findUnique({
       where: { email }
     })
 

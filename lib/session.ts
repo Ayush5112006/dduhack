@@ -1,6 +1,6 @@
-import crypto from "crypto"
+import { randomUUID } from "crypto"
 import { cookies } from "next/headers"
-import { prisma } from "@/lib/prisma"
+import { getPrismaClient } from "@/lib/prisma-multi-db"
 
 const SESSION_COOKIE_NAME = "hackathon_session"
 const SESSION_EXPIRY = 24 * 60 * 60 * 1000 // 24 hours
@@ -62,10 +62,12 @@ async function clearTokenCookie() {
 }
 
 export async function createSession(userData: Omit<Session, "token" | "loginTime" | "expiresAt">) {
-  const token = crypto.randomUUID()
+  const token = randomUUID()
   const expiresAt = Date.now() + SESSION_EXPIRY
 
-  await prisma.session.create({
+  const db = getPrismaClient(userData.userRole)
+
+  await db.session.create({
     data: {
       token,
       userId: userData.userId,
@@ -96,10 +98,22 @@ export async function getSession(): Promise<Session | null> {
   const cookiePayload = await readTokenFromCookie()
   if (!cookiePayload) return null
 
-  const sessionRecord = await prisma.session.findUnique({
-    where: { token: cookiePayload.token },
-    include: { user: true },
-  })
+  // Try to find session in all role-based databases
+  let sessionRecord = null
+  
+  for (const role of ["participant", "organizer", "admin"] as const) {
+    const db = getPrismaClient(role)
+    try {
+      sessionRecord = await db.session.findUnique({
+        where: { token: cookiePayload.token },
+        include: { user: true },
+      })
+      if (sessionRecord) break
+    } catch {
+      // Database might not have this session, continue to next
+      continue
+    }
+  }
 
   if (!sessionRecord || !sessionRecord.user) {
     await clearTokenCookie()
@@ -107,7 +121,8 @@ export async function getSession(): Promise<Session | null> {
   }
 
   if (sessionRecord.expiresAt.getTime() < Date.now()) {
-    await prisma.session.delete({ where: { token: sessionRecord.token } }).catch(() => {})
+    const db = getPrismaClient(sessionRecord.user.role as "participant" | "organizer" | "admin")
+    await db.session.delete({ where: { token: sessionRecord.token } }).catch(() => {})
     await clearTokenCookie()
     return null
   }
@@ -127,7 +142,11 @@ export async function destroySession(token?: string) {
   const cookiePayload = await readTokenFromCookie()
   const resolvedToken = token || cookiePayload?.token
   if (resolvedToken) {
-    await prisma.session.delete({ where: { token: resolvedToken } }).catch(() => {})
+    // Try to delete from all role databases
+    for (const role of ["participant", "organizer", "admin"] as const) {
+      const db = getPrismaClient(role)
+      await db.session.delete({ where: { token: resolvedToken } }).catch(() => {})
+    }
   }
   await clearTokenCookie()
 }

@@ -3,7 +3,26 @@ import { getSession } from "@/lib/session"
 import { hackathons, Hackathon, users, ensureUser, UserRole } from "@/lib/data"
 
 export async function GET() {
-  return NextResponse.json({ hackathons })
+  try {
+    const session = await getSession()
+    
+    // If organizer, return only their hackathons
+    if (session && session.userRole === "organizer") {
+      const myHackathons = hackathons.filter(h => h.ownerId === session.userId)
+      return NextResponse.json({ hackathons: myHackathons })
+    }
+    
+    // If admin, return all hackathons
+    if (session && session.userRole === "admin") {
+      return NextResponse.json({ hackathons })
+    }
+    
+    // Otherwise return empty
+    return NextResponse.json({ hackathons: [] })
+  } catch (error) {
+    console.error("Error fetching hackathons:", error)
+    return NextResponse.json({ hackathons: [] })
+  }
 }
 
 export async function POST(request: NextRequest) {

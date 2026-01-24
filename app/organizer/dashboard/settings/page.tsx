@@ -1,61 +1,97 @@
 "use client"
 
 import { useState } from "react"
+import { useRouter } from "next/navigation"
 import { DashboardSidebar } from "@/components/dashboard/sidebar"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
-import { Label } from "@/components/ui/label"
-import { Save, Mail, Shield, Bell } from "lucide-react"
+import { Switch } from "@/components/ui/switch"
+import { useSession } from "@/components/session-provider"
+import { Lock, Bell, Eye, LogOut, Trash2, Shield } from "lucide-react"
+import { useToast } from "@/components/toast-provider"
 
-export default function SettingsPage() {
+export default function OrganizerSettingsPage() {
+  const router = useRouter()
+  const { logout } = useSession()
   const [settings, setSettings] = useState({
-    organizationName: "DDU Hackathon",
-    email: "organizer@ddu.edu",
-    phone: "+91 8888 999 999",
-    website: "https://dduhackathon.com",
-    timezone: "IST",
-    notifications: {
-      emailNotifications: true,
-      participantUpdates: true,
-      submissionAlerts: true,
-    },
+    emailNotifications: true,
+    pushNotifications: false,
+    activityEmails: true,
+    marketingEmails: false,
+    twoFactorAuth: false,
+    profileVisibility: "public",
   })
+  const [isDeleting, setIsDeleting] = useState(false)
+  const [isLoggingOutAll, setIsLoggingOutAll] = useState(false)
+  const { addToast } = useToast()
 
-  const [isSaving, setIsSaving] = useState(false)
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target
+  const handleToggle = (key: keyof typeof settings) => {
     setSettings({
       ...settings,
-      [name]: value,
+      [key]: !settings[key],
     })
+    addToast("success", "Setting updated!")
   }
 
-  const handleNotificationToggle = (key: keyof typeof settings.notifications) => {
-    setSettings({
-      ...settings,
-      notifications: {
-        ...settings.notifications,
-        [key]: !settings.notifications[key],
-      },
-    })
+  const handleChangePassword = () => {
+    router.push("/dashboard/password")
   }
 
-  const handleSave = () => {
-    setIsSaving(true)
-    setTimeout(() => {
-      setIsSaving(false)
-      alert("Settings saved successfully!")
-    }, 1000)
+  const handleLogoutAll = async () => {
+    if (!confirm("Logout from all devices? You'll be logged out everywhere.")) {
+      return
+    }
+
+    setIsLoggingOutAll(true)
+    try {
+      const response = await fetch("/api/auth/logout-all", {
+        method: "POST",
+        credentials: "include",
+      })
+
+      if (!response.ok) {
+        const data = await response.json().catch(() => null)
+        throw new Error(data?.error || "Failed to logout")
+      }
+
+      await logout()
+      addToast("success", "Logged out from all devices!")
+      router.push("/auth/login")
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Failed to logout from all devices"
+      addToast("error", message)
+    } finally {
+      setIsLoggingOutAll(false)
+    }
+  }
+
+  const handleDeleteAccount = async () => {
+    const confirmed = confirm("Are you sure? This action cannot be undone.")
+    if (!confirmed) return
+
+    setIsDeleting(true)
+    try {
+      const response = await fetch("/api/account", {
+        method: "DELETE",
+        credentials: "include",
+      })
+
+      if (!response.ok) {
+        const data = await response.json().catch(() => null)
+        throw new Error(data?.error || "Failed to delete account")
+      }
+
+      await logout()
+      addToast("success", "Account deleted. Goodbye!")
+      router.push("/auth/login")
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to delete account"
+      addToast("error", message)
+    } finally {
+      setIsDeleting(false)
+    }
   }
 
   return (
@@ -65,178 +101,179 @@ export default function SettingsPage() {
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-foreground">Settings</h1>
           <p className="mt-2 text-muted-foreground">
-            Manage your organization and account settings
+            Manage your organizer account and preferences
           </p>
         </div>
 
-        <div className="grid gap-6 lg:grid-cols-3">
-          {/* Left sidebar - Settings menu */}
-          <div className="space-y-2">
-            <Button
-              variant="outline"
-              className="w-full justify-start gap-2 bg-primary/10 text-primary border-primary/30"
-            >
-              <Mail className="h-4 w-4" />
-              Organization
-            </Button>
-            <Button variant="outline" className="w-full justify-start gap-2">
-              <Shield className="h-4 w-4" />
-              Security
-            </Button>
-            <Button variant="outline" className="w-full justify-start gap-2">
-              <Bell className="h-4 w-4" />
-              Notifications
-            </Button>
-          </div>
-
-          {/* Main content area */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* Organization Settings */}
-            <Card className="border-border bg-card">
-              <CardHeader>
-                <CardTitle>Organization Details</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="space-y-2">
-                  <Label htmlFor="organizationName" className="text-foreground">
-                    Organization Name
-                  </Label>
-                  <Input
-                    id="organizationName"
-                    name="organizationName"
-                    value={settings.organizationName}
-                    onChange={handleInputChange}
-                    className="bg-secondary"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="email" className="text-foreground">
-                    Email Address
-                  </Label>
-                  <Input
-                    id="email"
-                    name="email"
-                    type="email"
-                    value={settings.email}
-                    onChange={handleInputChange}
-                    className="bg-secondary"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="phone" className="text-foreground">
-                    Phone Number
-                  </Label>
-                  <Input
-                    id="phone"
-                    name="phone"
-                    value={settings.phone}
-                    onChange={handleInputChange}
-                    className="bg-secondary"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="website" className="text-foreground">
-                    Website
-                  </Label>
-                  <Input
-                    id="website"
-                    name="website"
-                    value={settings.website}
-                    onChange={handleInputChange}
-                    className="bg-secondary"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="timezone" className="text-foreground">
-                    Timezone
-                  </Label>
-                  <Select defaultValue={settings.timezone}>
-                    <SelectTrigger className="bg-secondary">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="IST">Indian Standard Time (IST)</SelectItem>
-                      <SelectItem value="UTC">UTC</SelectItem>
-                      <SelectItem value="EST">Eastern Standard Time (EST)</SelectItem>
-                      <SelectItem value="CST">Central Standard Time (CST)</SelectItem>
-                      <SelectItem value="PST">Pacific Standard Time (PST)</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Notification Preferences */}
-            <Card className="border-border bg-card">
-              <CardHeader>
+        <div className="space-y-6">
+          {/* Notifications Settings */}
+          <Card className="border-border bg-card">
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <Bell className="h-5 w-5" />
                 <CardTitle>Notification Preferences</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center justify-between p-4 border border-border rounded-lg bg-secondary/50">
-                  <div>
-                    <p className="font-medium text-foreground">Email Notifications</p>
-                    <p className="text-sm text-muted-foreground">
-                      Receive email updates about your hackathons
-                    </p>
-                  </div>
-                  <Badge
-                    variant={settings.notifications.emailNotifications ? "default" : "outline"}
-                    className="cursor-pointer"
-                    onClick={() => handleNotificationToggle("emailNotifications")}
-                  >
-                    {settings.notifications.emailNotifications ? "On" : "Off"}
-                  </Badge>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="font-medium text-foreground">Email Notifications</p>
+                  <p className="text-sm text-muted-foreground">
+                    Receive notifications via email
+                  </p>
                 </div>
-
-                <div className="flex items-center justify-between p-4 border border-border rounded-lg bg-secondary/50">
-                  <div>
-                    <p className="font-medium text-foreground">Participant Updates</p>
-                    <p className="text-sm text-muted-foreground">
-                      Get notified when participants register or withdraw
-                    </p>
-                  </div>
-                  <Badge
-                    variant={settings.notifications.participantUpdates ? "default" : "outline"}
-                    className="cursor-pointer"
-                    onClick={() => handleNotificationToggle("participantUpdates")}
-                  >
-                    {settings.notifications.participantUpdates ? "On" : "Off"}
-                  </Badge>
+                <Switch
+                  checked={settings.emailNotifications}
+                  onCheckedChange={() => handleToggle("emailNotifications")}
+                />
+              </div>
+              <div className="flex items-center justify-between border-t border-border pt-4">
+                <div>
+                  <p className="font-medium text-foreground">Push Notifications</p>
+                  <p className="text-sm text-muted-foreground">
+                    Receive browser push notifications
+                  </p>
                 </div>
-
-                <div className="flex items-center justify-between p-4 border border-border rounded-lg bg-secondary/50">
-                  <div>
-                    <p className="font-medium text-foreground">Submission Alerts</p>
-                    <p className="text-sm text-muted-foreground">
-                      Be alerted when teams submit their projects
-                    </p>
-                  </div>
-                  <Badge
-                    variant={settings.notifications.submissionAlerts ? "default" : "outline"}
-                    className="cursor-pointer"
-                    onClick={() => handleNotificationToggle("submissionAlerts")}
-                  >
-                    {settings.notifications.submissionAlerts ? "On" : "Off"}
-                  </Badge>
+                <Switch
+                  checked={settings.pushNotifications}
+                  onCheckedChange={() => handleToggle("pushNotifications")}
+                />
+              </div>
+              <div className="flex items-center justify-between border-t border-border pt-4">
+                <div>
+                  <p className="font-medium text-foreground">Activity Updates</p>
+                  <p className="text-sm text-muted-foreground">
+                    Get updates about your hackathons and submissions
+                  </p>
                 </div>
-              </CardContent>
-            </Card>
+                <Switch
+                  checked={settings.activityEmails}
+                  onCheckedChange={() => handleToggle("activityEmails")}
+                />
+              </div>
+              <div className="flex items-center justify-between border-t border-border pt-4">
+                <div>
+                  <p className="font-medium text-foreground">Marketing Emails</p>
+                  <p className="text-sm text-muted-foreground">
+                    Receive promotional and marketing emails
+                  </p>
+                </div>
+                <Switch
+                  checked={settings.marketingEmails}
+                  onCheckedChange={() => handleToggle("marketingEmails")}
+                />
+              </div>
+            </CardContent>
+          </Card>
 
-            {/* Save Button */}
-            <Button
-              onClick={handleSave}
-              disabled={isSaving}
-              className="w-full gap-2"
-              size="lg"
-            >
-              <Save className="h-4 w-4" />
-              {isSaving ? "Saving..." : "Save Changes"}
-            </Button>
-          </div>
+          {/* Privacy Settings */}
+          <Card className="border-border bg-card">
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <Eye className="h-5 w-5" />
+                <CardTitle>Privacy & Visibility</CardTitle>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <p className="font-medium text-foreground mb-3">Profile Visibility</p>
+                <div className="flex gap-3">
+                  {["public", "private", "hackathon-only"].map((level) => (
+                    <Button
+                      key={level}
+                      variant={
+                        settings.profileVisibility === level ? "default" : "outline"
+                      }
+                      size="sm"
+                      onClick={() =>
+                        setSettings({ ...settings, profileVisibility: level })
+                      }
+                      className="capitalize"
+                    >
+                      {level.replace("-", " ")}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Security Settings */}
+          <Card className="border-border bg-card">
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <Shield className="h-5 w-5" />
+                <CardTitle>Security</CardTitle>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="font-medium text-foreground">Two-Factor Authentication</p>
+                  <p className="text-sm text-muted-foreground">
+                    Add an extra layer of security
+                  </p>
+                </div>
+                <Switch
+                  checked={settings.twoFactorAuth}
+                  onCheckedChange={() => handleToggle("twoFactorAuth")}
+                />
+              </div>
+              <Button
+                variant="outline"
+                className="w-full gap-2 border-border justify-start mt-4"
+                onClick={handleChangePassword}
+              >
+                <Lock className="h-4 w-4" />
+                Change Password
+              </Button>
+            </CardContent>
+          </Card>
+
+          {/* Session Management */}
+          <Card className="border-border bg-card">
+            <CardHeader>
+              <CardTitle>Session Management</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                You are currently logged in from this device
+              </p>
+              <Badge variant="outline" className="bg-green-500/10 text-green-500">
+                Active
+              </Badge>
+              <Button
+                variant="outline"
+                className="w-full gap-2 justify-start"
+                onClick={handleLogoutAll}
+                disabled={isLoggingOutAll}
+              >
+                <LogOut className="h-4 w-4" />
+                {isLoggingOutAll ? "Logging out..." : "Logout from All Devices"}
+              </Button>
+            </CardContent>
+          </Card>
+
+          {/* Danger Zone */}
+          <Card className="border-destructive/50 bg-destructive/5">
+            <CardHeader>
+              <CardTitle className="text-destructive">Danger Zone</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-muted-foreground mb-4">
+                These actions cannot be undone. Please proceed with caution.
+              </p>
+              <Button
+                variant="destructive"
+                className="gap-2"
+                onClick={handleDeleteAccount}
+                disabled={isDeleting}
+              >
+                <Trash2 className="h-4 w-4" />
+                {isDeleting ? "Deleting..." : "Delete Account"}
+              </Button>
+            </CardContent>
+          </Card>
         </div>
       </main>
     </div>

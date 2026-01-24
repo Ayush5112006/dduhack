@@ -1,13 +1,64 @@
 import Link from "next/link"
-import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { hackathons } from "@/lib/data"
-import { Calendar, MapPin, Trophy, Users, ArrowRight } from "lucide-react"
+import { ArrowRight, Trophy, Users, Calendar } from "lucide-react"
+import { getPrismaClient } from "@/lib/prisma-multi-db"
 
-export function FeaturedHackathons() {
-  const featured = hackathons.filter((h) => h.featured).slice(0, 3)
+async function getFeaturedHackathons() {
+  try {
+    const organizerDb = getPrismaClient("organizer")
+    
+    const hackathons = await organizerDb.hackathon.findMany({
+      where: {
+        owner: {
+          role: { in: ["ORGANIZER", "organizer"] },
+        },
+      },
+      include: {
+        owner: true,
+        _count: {
+          select: {
+            registrations: true,
+          },
+        },
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+      take: 3,
+    })
+
+    const computeStatus = (startDate: Date, endDate: Date): string => {
+      const now = new Date()
+      if (now < startDate) return "upcoming"
+      if (now > endDate) return "past"
+      return "live"
+    }
+
+    return hackathons.map((h) => ({
+      id: h.id,
+      title: h.title,
+      organizer: h.owner?.name || "Anonymous",
+      status: computeStatus(h.startDate, h.endDate),
+      category: h.category || "General",
+      startDate: h.startDate,
+      endDate: h.endDate,
+      prizeAmount: h.prizeAmount,
+      registrations: h._count.registrations,
+    }))
+  } catch (error) {
+    console.error("Error fetching featured hackathons", error)
+    return []
+  }
+}
+
+export async function FeaturedHackathons() {
+  const featured = await getFeaturedHackathons()
+
+  const formatDate = (date: Date) => {
+    return new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric" }).format(date)
+  }
 
   return (
     <section className="border-b border-border bg-card py-20">
@@ -24,65 +75,60 @@ export function FeaturedHackathons() {
           </Link>
         </div>
 
+        {featured.length === 0 ? (
+          <div className="mt-10 text-center py-12">
+            <p className="text-muted-foreground">No featured hackathons available at this time</p>
+          </div>
+        ) : (
         <div className="mt-10 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {featured.map((hackathon) => (
-            <Card key={hackathon.id} className="group overflow-hidden border-border bg-background transition-all hover:border-primary/50">
-              <div className="relative aspect-video overflow-hidden">
-                <Image
-                  src={hackathon.banner || "/placeholder.svg"}
-                  alt={hackathon.title}
-                  fill
-                  className="object-cover transition-transform duration-300 group-hover:scale-105"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-background/80 to-transparent" />
-                <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between">
-                  <Badge variant="secondary" className="bg-background/80 backdrop-blur">
-                    {hackathon.mode}
-                  </Badge>
-                  <Badge className="bg-primary text-primary-foreground">
-                    <Trophy className="mr-1 h-3 w-3" />
-                    {hackathon.prize}
-                  </Badge>
-                </div>
-              </div>
-              <CardContent className="p-5">
-                <div className="mb-3 flex flex-wrap gap-2">
-                  {hackathon.tags.slice(0, 2).map((tag) => (
-                    <Badge key={tag} variant="outline" className="text-xs">
-                      {tag}
+            <Link key={hackathon.id} href={`/hackathons/${hackathon.id}`}>
+              <Card className="h-full hover:shadow-lg transition-shadow cursor-pointer overflow-hidden">
+                <CardContent className="p-6 h-full flex flex-col">
+                  <div className="mb-4 flex justify-between items-start gap-2">
+                    <div>
+                      <h3 className="font-bold text-lg mb-1 line-clamp-2">{hackathon.title}</h3>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">{hackathon.organizer}</p>
+                    </div>
+                    <Badge
+                      className={
+                        hackathon.status === "live"
+                          ? "bg-green-500 hover:bg-green-600"
+                          : hackathon.status === "upcoming"
+                            ? "bg-blue-500 hover:bg-blue-600"
+                            : "bg-gray-400 hover:bg-gray-500"
+                      }
+                    >
+                      {hackathon.status.charAt(0).toUpperCase() + hackathon.status.slice(1)}
                     </Badge>
-                  ))}
-                </div>
-                <h3 className="text-lg font-semibold text-foreground transition-colors group-hover:text-primary">
-                  {hackathon.title}
-                </h3>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  by {hackathon.organizer}
-                </p>
-                <div className="mt-4 flex items-center gap-4 text-sm text-muted-foreground">
-                  <div className="flex items-center gap-1">
-                    <Calendar className="h-4 w-4" />
-                    <span>{hackathon.deadline}</span>
                   </div>
-                  <div className="flex items-center gap-1">
-                    <Users className="h-4 w-4" />
-                    <span>{hackathon.participants.toLocaleString()}</span>
+
+                  <div className="space-y-3 mb-4 flex-1">
+                    <div className="flex items-center gap-2 text-sm">
+                      <Calendar className="w-4 h-4 text-gray-500" />
+                      <span>
+                        {formatDate(hackathon.startDate)} - {formatDate(hackathon.endDate)}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm">
+                      <Trophy className="w-4 h-4 text-gray-500" />
+                      <span className="font-semibold">₹{hackathon.prizeAmount.toLocaleString()}</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm">
+                      <Users className="w-4 h-4 text-gray-500" />
+                      <span>{hackathon.registrations} registered</span>
+                    </div>
                   </div>
-                </div>
-                <div className="mt-5 flex gap-2">
-                  <Link href={`/hackathons/${hackathon.id}`} className="flex-1">
-                    <Button variant="outline" className="w-full bg-transparent">
-                      View Details
-                    </Button>
-                  </Link>
-                  <Link href={`/hackathons/${hackathon.id}#register`}>
-                    <Button>Register</Button>
-                  </Link>
-                </div>
-              </CardContent>
-            </Card>
+
+                  <Badge variant="secondary" className="w-fit">
+                    {hackathon.category}
+                  </Badge>
+                </CardContent>
+              </Card>
+            </Link>
           ))}
         </div>
+        )}
 
         <div className="mt-8 text-center md:hidden">
           <Link href="/hackathons">

@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Eye, EyeOff, Github, Chrome, ArrowLeft, Copy, Check } from "lucide-react"
+import { Eye, EyeOff, Github, Chrome, ArrowLeft } from "lucide-react"
 import {
   Select,
   SelectContent,
@@ -18,34 +18,14 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 
-const DEFAULT_EMAIL = "demo@example.com"
-const DEFAULT_PASSWORD = "demo123"
 
 export default function LoginPage() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
-  const [copied, setCopied] = useState<"email" | "password" | null>(null)
   const [userRole, setUserRole] = useState<"participant" | "organizer" | "admin">("participant")
   const [errorMessage, setErrorMessage] = useState("")
-
-  const handleCopyEmail = () => {
-    navigator.clipboard.writeText(DEFAULT_EMAIL)
-    setCopied("email")
-    setTimeout(() => setCopied(null), 2000)
-  }
-
-  const handleCopyPassword = () => {
-    navigator.clipboard.writeText(DEFAULT_PASSWORD)
-    setCopied("password")
-    setTimeout(() => setCopied(null), 2000)
-  }
-
-  const handleQuickLogin = () => {
-    setEmail(DEFAULT_EMAIL)
-    setPassword(DEFAULT_PASSWORD)
-  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -271,62 +251,6 @@ export default function LoginPage() {
                     </button>
                   </div>
                 </div>
-
-                {/* Demo Credentials Card */}
-                <Card className="border-yellow-500/30 bg-yellow-500/5">
-                  <CardContent className="pt-4">
-                    <p className="text-xs font-semibold text-yellow-600 mb-3">DEMO CREDENTIALS</p>
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="text-xs text-muted-foreground">Email:</p>
-                          <p className="text-sm font-mono text-foreground">{DEFAULT_EMAIL}</p>
-                        </div>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={handleCopyEmail}
-                          className="h-8 w-8 p-0"
-                        >
-                          {copied === "email" ? (
-                            <Check className="h-4 w-4 text-green-500" />
-                          ) : (
-                            <Copy className="h-4 w-4" />
-                          )}
-                        </Button>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="text-xs text-muted-foreground">Password:</p>
-                          <p className="text-sm font-mono text-foreground">{DEFAULT_PASSWORD}</p>
-                        </div>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={handleCopyPassword}
-                          className="h-8 w-8 p-0"
-                        >
-                          {copied === "password" ? (
-                            <Check className="h-4 w-4 text-green-500" />
-                          ) : (
-                            <Copy className="h-4 w-4" />
-                          )}
-                        </Button>
-                      </div>
-                    </div>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={handleQuickLogin}
-                      className="w-full mt-3 border-yellow-500/30 text-yellow-600 hover:bg-yellow-500/10"
-                    >
-                      Quick Login
-                    </Button>
-                  </CardContent>
-                </Card>
 
                 <div className="flex items-center gap-2">
                   <Checkbox id="remember" />

@@ -36,6 +36,7 @@ const organizerLinks = [
   { name: "Participants", href: "/organizer/dashboard/participants", icon: User },
   { name: "Submissions", href: "/organizer/dashboard/submissions", icon: FileText },
   { name: "Schedule", href: "/organizer/dashboard/schedule", icon: Calendar },
+  { name: "Profile", href: "/organizer/dashboard/profile", icon: User },
   { name: "Settings", href: "/organizer/dashboard/settings", icon: Settings },
 ]
 

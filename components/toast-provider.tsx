@@ -22,7 +22,8 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   const [toasts, setToasts] = useState<Toast[]>([])
 
   const addToast = useCallback((type: "success" | "error" | "info", message: string, duration = 3000) => {
-    const id = Date.now().toString()
+    // Use a high-entropy id to avoid duplicate keys when multiple toasts fire in the same tick
+    const id = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
     setToasts((prev) => [...prev, { id, message, type, duration }])
 
     if (duration > 0) {

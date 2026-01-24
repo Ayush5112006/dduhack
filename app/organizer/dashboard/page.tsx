@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 import {
   Table,
   TableBody,
@@ -44,7 +45,8 @@ import {
 } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useToast } from "@/components/toast-provider"
-import type { Hackathon } from "@/lib/data"
+import { CreateHackathonDialog } from "@/components/organizer/hackathons/create-hackathon-dialog"
+import type { HackathonSummary } from "@/components/organizer/hackathons/hackathon-card"
 
 const recentParticipants: Array<{
   id: string
@@ -54,19 +56,50 @@ const recentParticipants: Array<{
   joinDate: string
 }> = []
 
+type UserProfile = {
+  bio: string | null
+  location: string | null
+  website: string | null
+  github: string | null
+  linkedin: string | null
+  twitter: string | null
+  skills: string[] | null
+  avatar: string | null
+}
+
+type UserInfo = {
+  name: string
+  email: string
+  role: string
+}
+
 export default function OrganizerDashboard() {
   const router = useRouter()
   const [searchQuery, setSearchQuery] = useState("")
-  const [hackathons, setHackathons] = useState<Hackathon[]>([])
-  const [newHackathonName, setNewHackathonName] = useState("")
+  const [hackathons, setHackathons] = useState<HackathonSummary[]>([])
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
+  const [profileLoading, setProfileLoading] = useState(true)
+  const [profileError, setProfileError] = useState("")
+  const [profile, setProfile] = useState<UserProfile | null>(null)
+  const [user, setUser] = useState<UserInfo | null>(null)
+  const [editProfileOpen, setEditProfileOpen] = useState(false)
+  const [editProfile, setEditProfile] = useState({
+    bio: "",
+    location: "",
+    website: "",
+    github: "",
+    linkedin: "",
+    twitter: "",
+    skillsText: "",
+  })
+  const [pageViews, setPageViews] = useState(0)
   const { addToast } = useToast()
 
   useEffect(() => {
     const load = async () => {
       try {
-        const response = await fetch("/api/hackathons", { credentials: "include" })
+        const response = await fetch("/api/organizer/hackathons", { credentials: "include" })
         if (response.ok) {
           const data = await response.json()
           setHackathons(data.hackathons || [])
@@ -78,57 +111,144 @@ export default function OrganizerDashboard() {
       }
     }
     load()
+    
+    // Track page views in database
+    const trackPageView = async () => {
+      try {
+        const res = await fetch("/api/analytics/page-views", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ page: "organizer-dashboard" }),
+        })
+        if (res.ok) {
+          const data = await res.json()
+          setPageViews(data.totalViews || 0)
+        }
+      } catch (error) {
+        console.error("Failed to track page view", error)
+      }
+    }
+    trackPageView()
   }, [])
 
+  useEffect(() => {
+    const loadProfile = async () => {
+      try {
+        const res = await fetch("/api/profile", { credentials: "include" })
+        if (!res.ok) {
+          setProfileError("Could not load profile")
+          return
+        }
+        const data = await res.json()
+        const skillsArray = (() => {
+          if (!data.profile?.skills) return []
+          if (Array.isArray(data.profile.skills)) return data.profile.skills
+          try {
+            const parsed = JSON.parse(data.profile.skills)
+            return Array.isArray(parsed) ? parsed : []
+          } catch {
+            return []
+          }
+        })()
+
+        setProfile({
+          bio: data.profile?.bio ?? null,
+          location: data.profile?.location ?? null,
+          website: data.profile?.website ?? null,
+          github: data.profile?.github ?? null,
+          linkedin: data.profile?.linkedin ?? null,
+          twitter: data.profile?.twitter ?? null,
+          avatar: data.profile?.avatar ?? null,
+          skills: skillsArray,
+        })
+        setUser(data.user)
+        setEditProfile({
+          bio: data.profile?.bio ?? "",
+          location: data.profile?.location ?? "",
+          website: data.profile?.website ?? "",
+          github: data.profile?.github ?? "",
+          linkedin: data.profile?.linkedin ?? "",
+          twitter: data.profile?.twitter ?? "",
+          skillsText: skillsArray.join(", "),
+        })
+      } catch (error) {
+        console.error("Failed to load profile", error)
+        setProfileError("Could not load profile")
+      } finally {
+        setProfileLoading(false)
+      }
+    }
+
+    loadProfile()
+  }, [])
+
+  const handleSaveProfile = async () => {
+    const skillsArray = editProfile.skillsText
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean)
+
+    try {
+      const res = await fetch("/api/profile", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          bio: editProfile.bio,
+          location: editProfile.location,
+          website: editProfile.website,
+          github: editProfile.github,
+          linkedin: editProfile.linkedin,
+          twitter: editProfile.twitter,
+          skills: skillsArray,
+        }),
+      })
+
+      if (!res.ok) {
+        const error = await res.json().catch(() => ({}))
+        alert(error.error || "Failed to update profile")
+        return
+      }
+
+      const data = await res.json()
+      setProfile({
+        bio: data.profile?.bio ?? null,
+        location: data.profile?.location ?? null,
+        website: data.profile?.website ?? null,
+        github: data.profile?.github ?? null,
+        linkedin: data.profile?.linkedin ?? null,
+        twitter: data.profile?.twitter ?? null,
+        avatar: data.profile?.avatar ?? null,
+        skills: skillsArray,
+      })
+      setEditProfileOpen(false)
+    } catch (error) {
+      console.error("Failed to save profile", error)
+      alert("Failed to update profile")
+    }
+  }
+
   const totalHackathons = hackathons.length
-  const totalParticipants = hackathons.reduce((sum, h) => sum + h.participants, 0)
+  const totalParticipants = hackathons.reduce((sum, h) => sum + (h.counts?.registrations || 0), 0)
   const totalSubmissions = 0
   const reviewedPercentage = 0
 
   const stats = [
-    { title: "Total Hackathons", value: totalHackathons.toString(), icon: Trophy, change: "+1 this month" },
-    { title: "Total Participants", value: totalParticipants.toLocaleString(), icon: Users, change: "+342 this week" },
+    { title: "Total Hackathons", value: totalHackathons.toString(), icon: Trophy },
+    { title: "Total Participants", value: totalParticipants.toLocaleString(), icon: Users },
     { title: "Submissions", value: totalSubmissions.toLocaleString(), icon: FileText, change: `${reviewedPercentage}% reviewed` },
-    { title: "Page Views", value: "45.2K", icon: Eye, change: "+12% from last month" },
+    { title: "Page Views", value: pageViews.toString(), icon: Eye },
   ]
 
   const filteredHackathons = hackathons.filter((h) =>
     h.title.toLowerCase().includes(searchQuery.toLowerCase())
   )
 
-  const handleCreateHackathon = async () => {
-    if (!newHackathonName.trim()) return
-    try {
-      const response = await fetch("/api/hackathons", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({
-          title: newHackathonName,
-          startDate: new Date().toISOString().split("T")[0],
-          endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
-          registrationDeadline: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
-          mode: "Online",
-          category: "Web",
-          prizeAmount: 5000,
-          difficulty: "Intermediate",
-          description: "",
-        }),
-      })
-      if (response.ok) {
-        const data = await response.json()
-        setHackathons([data.hackathon, ...hackathons])
-        setNewHackathonName("")
-        setIsDialogOpen(false)
-        addToast("success", "Hackathon created")
-      } else {
-        const error = await response.json()
-        addToast(error.error || "Failed to create", "error")
-      }
-    } catch (error) {
-      console.error("Create error", error)
-      addToast("error", "Failed to create hackathon")
-    }
+  const handleSuccess = (hackathon: any) => {
+    setHackathons([hackathon, ...hackathons])
+    setIsDialogOpen(false)
+    addToast("success", "Hackathon created successfully")
   }
 
   const handleDeleteHackathon = (id: string) => {
@@ -176,56 +296,80 @@ export default function OrganizerDashboard() {
               Manage your hackathons and track performance
             </p>
             </div>
-            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-              <DialogTrigger asChild>
+            <CreateHackathonDialog
+              open={isDialogOpen}
+              onOpenChange={setIsDialogOpen}
+              onSuccess={handleSuccess}
+              trigger={
                 <Button className="gap-2">
                   <Plus className="h-4 w-4" />
                   Create Hackathon
                 </Button>
-              </DialogTrigger>
-              <DialogContent className="sm:max-w-md">
-                <DialogHeader>
-                  <DialogTitle>Create New Hackathon</DialogTitle>
-                  <DialogDescription>
-                    Start by entering basic details. You can add more information later.
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="space-y-4 pt-4">
-                  <div className="space-y-2">
-                    <label htmlFor="hackathonName" className="text-sm font-medium text-foreground">
-                      Hackathon Name
-                    </label>
-                    <Input 
-                      id="hackathonName" 
-                      placeholder="Enter hackathon name" 
-                      className="bg-secondary"
-                      value={newHackathonName}
-                      onChange={(e) => setNewHackathonName(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") {
-                          handleCreateHackathon()
-                        }
-                      }}
-                    />
-                  </div>
-                  <div className="flex justify-end gap-2">
-                    <Button 
-                      variant="outline"
-                      onClick={() => {
-                        setIsDialogOpen(false)
-                        setNewHackathonName("")
-                      }}
-                    >
-                      Cancel
-                    </Button>
-                    <Button onClick={handleCreateHackathon} disabled={!newHackathonName.trim()}>
-                      Continue
-                    </Button>
-                  </div>
-                </div>
-              </DialogContent>
-            </Dialog>
+              }
+            />
           </div>
+
+            <div className="mt-6 grid gap-4 lg:grid-cols-3">
+              <Card className="border-border bg-card lg:col-span-2">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Profile</p>
+                    <CardTitle className="text-xl">{user?.name || "Your profile"}</CardTitle>
+                  </div>
+                  <Button size="sm" variant="outline" onClick={() => setEditProfileOpen(true)}>
+                    Edit profile
+                  </Button>
+                </CardHeader>
+                <CardContent className="grid gap-3 md:grid-cols-2">
+                  <div>
+                    <p className="text-xs text-muted-foreground">Email</p>
+                    <p className="text-sm text-foreground">{user?.email}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Role</p>
+                    <p className="text-sm capitalize text-foreground">{user?.role}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Location</p>
+                    <p className="text-sm text-foreground">{profile?.location || "Add your location"}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Website</p>
+                    <p className="text-sm text-primary">{profile?.website || "Add a website"}</p>
+                  </div>
+                  <div className="md:col-span-2">
+                    <p className="text-xs text-muted-foreground">Bio</p>
+                    <p className="text-sm text-foreground">{profile?.bio || "Tell participants about you"}</p>
+                  </div>
+                  <div className="md:col-span-2">
+                    <p className="text-xs text-muted-foreground">Skills</p>
+                    <p className="text-sm text-foreground">{profile?.skills?.join(", ") || "Add skills"}</p>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="border-border bg-card">
+                <CardHeader>
+                  <CardTitle>Connections</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  <div>
+                    <p className="text-xs text-muted-foreground">GitHub</p>
+                    <p className="text-sm text-primary">{profile?.github || "Add GitHub"}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">LinkedIn</p>
+                    <p className="text-sm text-primary">{profile?.linkedin || "Add LinkedIn"}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Twitter</p>
+                    <p className="text-sm text-primary">{profile?.twitter || "Add Twitter"}</p>
+                  </div>
+                  {profileError && <p className="text-xs text-red-500">{profileError}</p>}
+                  {profileLoading && <p className="text-xs text-muted-foreground">Loading profile…</p>}
+                </CardContent>
+              </Card>
+            </div>
 
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
             {stats.map((stat) => (
@@ -293,7 +437,7 @@ export default function OrganizerDashboard() {
                             </Badge>
                           </TableCell>
                           <TableCell className="text-muted-foreground">
-                            {hackathon.participants.toLocaleString()}
+                            {(hackathon.counts?.registrations || 0).toLocaleString()}
                           </TableCell>
                           <TableCell className="text-muted-foreground">
                             0
@@ -446,6 +590,76 @@ export default function OrganizerDashboard() {
             </Card>
           </div>
         </main>
-      </div>
+      
+      <Dialog open={editProfileOpen} onOpenChange={setEditProfileOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Update profile</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-2">
+              <Label>Bio</Label>
+              <Input
+                value={editProfile.bio}
+                onChange={(e) => setEditProfile({ ...editProfile, bio: e.target.value })}
+                placeholder="Short intro"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Location</Label>
+              <Input
+                value={editProfile.location}
+                onChange={(e) => setEditProfile({ ...editProfile, location: e.target.value })}
+                placeholder="City, Country"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Website</Label>
+              <Input
+                value={editProfile.website}
+                onChange={(e) => setEditProfile({ ...editProfile, website: e.target.value })}
+                placeholder="https://..."
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>GitHub</Label>
+              <Input
+                value={editProfile.github}
+                onChange={(e) => setEditProfile({ ...editProfile, github: e.target.value })}
+                placeholder="https://github.com/username"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>LinkedIn</Label>
+              <Input
+                value={editProfile.linkedin}
+                onChange={(e) => setEditProfile({ ...editProfile, linkedin: e.target.value })}
+                placeholder="https://linkedin.com/in/username"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Twitter</Label>
+              <Input
+                value={editProfile.twitter}
+                onChange={(e) => setEditProfile({ ...editProfile, twitter: e.target.value })}
+                placeholder="https://twitter.com/username"
+              />
+            </div>
+            <div className="space-y-2 md:col-span-2">
+              <Label>Skills (comma separated)</Label>
+              <Input
+                value={editProfile.skillsText}
+                onChange={(e) => setEditProfile({ ...editProfile, skillsText: e.target.value })}
+                placeholder="AI, Backend, UX"
+              />
+            </div>
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setEditProfileOpen(false)}>Cancel</Button>
+            <Button onClick={handleSaveProfile}>Save</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </div>
   )
 }

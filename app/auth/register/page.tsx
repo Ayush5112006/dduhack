@@ -9,13 +9,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
+// Role selection removed; default to participant
 import { Eye, EyeOff, Github, Chrome, ArrowLeft, Check } from "lucide-react"
 
 const passwordRequirements = [
@@ -29,7 +23,7 @@ export default function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [password, setPassword] = useState("")
   const [isLoading, setIsLoading] = useState(false)
-  const [role, setRole] = useState("participant")
+  const [role] = useState("participant")
   const [firstName, setFirstName] = useState("")
   const [lastName, setLastName] = useState("")
   const [email, setEmail] = useState("")
@@ -261,17 +255,10 @@ export default function RegisterPage() {
 
                 <div className="space-y-2">
                   <Label htmlFor="role">I am a</Label>
-                  <Select value={role} onValueChange={setRole}>
-                    <SelectTrigger className="bg-secondary">
-                      <SelectValue placeholder="Select your role" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="participant">Participant / Developer</SelectItem>
-                      <SelectItem value="organizer">Hackathon Organizer</SelectItem>
-                      <SelectItem value="judge">Judge / Evaluator</SelectItem>
-                      <SelectItem value="admin">Admin (Superuser)</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <div className="rounded-md border border-border/60 bg-secondary px-3 py-2 text-sm text-foreground">
+                    Participant / Developer (default)
+                  </div>
+                  <p className="text-xs text-muted-foreground">Account role is fixed to participant for registration.</p>
                 </div>
 
                 <div className="space-y-2">

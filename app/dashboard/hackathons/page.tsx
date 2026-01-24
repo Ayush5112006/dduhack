@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import Link from "next/link"
 import { DashboardSidebar } from "@/components/dashboard/sidebar"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -21,61 +21,82 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Search, MoreHorizontal, ExternalLink, Trash2, Edit, CalendarDays } from "lucide-react"
+import { Search, MoreHorizontal, ExternalLink, Trash2, CalendarDays, Loader2 } from "lucide-react"
 import { useToast } from "@/components/toast-provider"
 
-const mockHackathons: Array<{
+type Registration = {
   id: string
-  name: string
-  role: string
+  hackathonId: string
+  hackathonTitle: string
+  startDate: string
+  endDate: string
   status: string
-  deadline: string
-  submission: string
-  prize: string
-  participants: number
-}> = []
+  prizeAmount: number
+  category: string
+  mode: string
+  registrationStatus: string
+  registeredAt: string
+}
 
 export default function ParticipantHackathonsPage() {
   const [searchQuery, setSearchQuery] = useState("")
-  const [hackathons, setHackathons] = useState(mockHackathons)
+  const [registrations, setRegistrations] = useState<Registration[]>([])
+  const [loading, setLoading] = useState(true)
   const { addToast } = useToast()
 
-  const filteredHackathons = hackathons.filter((h) =>
-    h.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    h.role.toLowerCase().includes(searchQuery.toLowerCase())
+  useEffect(() => {
+    fetchRegistrations()
+  }, [])
+
+  async function fetchRegistrations() {
+    setLoading(true)
+    try {
+      const res = await fetch("/api/participant/registrations")
+      const data = await res.json()
+      
+      if (!res.ok) {
+        addToast("error", data.error || "Failed to load registrations")
+        return
+      }
+
+      setRegistrations(data.registrations || [])
+    } catch (error) {
+      console.error(error)
+      addToast("error", "Unable to load registrations")
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const filteredRegistrations = registrations.filter((r) =>
+    r.hackathonTitle.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    r.category.toLowerCase().includes(searchQuery.toLowerCase())
   )
 
-  const handleWithdraw = (id: string) => {
-    if (confirm("Withdraw from this hackathon?")) {
-      setHackathons(hackathons.filter((h) => h.id !== id))
-      addToast("success", "Withdrawn successfully!")
-    }
-  }
+  const handleWithdraw = async (id: string) => {
+    if (!confirm("Withdraw from this hackathon?")) return
 
-  const handleSubmitProject = (id: string) => {
-    const hackathon = hackathons.find((h) => h.id === id)
-    if (hackathon) {
-      const githubUrl = prompt("Enter your GitHub repository URL:")
-      if (githubUrl) {
-        if (!githubUrl.includes("github.com")) {
-          addToast("error", "Invalid GitHub URL!")
-          return
-        }
-        setHackathons(
-          hackathons.map((h) =>
-            h.id === id ? { ...h, submission: "Submitted" } : h
-          )
-        )
-        addToast("success", "Project submitted successfully!")
+    try {
+      const res = await fetch(`/api/participant/registrations/${id}`, {
+        method: "DELETE",
+      })
+
+      if (!res.ok) {
+        const data = await res.json()
+        addToast("error", data.error || "Failed to withdraw")
+        return
       }
+
+      setRegistrations(registrations.filter((r) => r.id !== id))
+      addToast("success", "Withdrawn successfully!")
+    } catch (error) {
+      console.error(error)
+      addToast("error", "Unable to withdraw")
     }
   }
 
-  const handleViewDetails = (id: string) => {
-    const hackathon = hackathons.find((h) => h.id === id)
-    if (hackathon) {
-      window.location.href = `/hackathons/${id}`
-    }
+  const formatDate = (value: string) => {
+    return new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", year: "numeric" }).format(new Date(value))
   }
 
   return (
@@ -112,10 +133,15 @@ export default function ParticipantHackathonsPage() {
               </div>
             </div>
 
-            {filteredHackathons.length === 0 ? (
+            {loading ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="mr-2 h-5 w-5 animate-spin text-muted-foreground" />
+                <p className="text-muted-foreground">Loading registrations...</p>
+              </div>
+            ) : filteredRegistrations.length === 0 ? (
               <div className="rounded-lg border border-dashed border-border bg-muted/30 p-8 text-center">
                 <p className="text-muted-foreground">
-                  {hackathons.length === 0
+                  {registrations.length === 0
                     ? "You haven't registered for any hackathons yet"
                     : "No hackathons match your search"}
                 </p>
@@ -131,65 +157,52 @@ export default function ParticipantHackathonsPage() {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Name</TableHead>
-                      <TableHead>Your Role</TableHead>
+                      <TableHead>Category</TableHead>
                       <TableHead>Status</TableHead>
-                      <TableHead>Submission</TableHead>
-                      <TableHead>Deadline</TableHead>
+                      <TableHead>Mode</TableHead>
+                      <TableHead>Dates</TableHead>
                       <TableHead>Prize Pool</TableHead>
                       <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredHackathons.map((hackathon) => (
-                      <TableRow key={hackathon.id}>
+                    {filteredRegistrations.map((registration) => (
+                      <TableRow key={registration.id}>
                         <TableCell className="font-medium text-foreground">
-                          {hackathon.name}
+                          {registration.hackathonTitle}
                         </TableCell>
-                        <TableCell className="text-muted-foreground">
-                          {hackathon.role}
+                        <TableCell>
+                          <Badge variant="secondary">{registration.category}</Badge>
                         </TableCell>
                         <TableCell>
                           <Badge
                             variant={
-                              hackathon.status === "In Progress"
+                              registration.status === "live"
                                 ? "default"
-                                : hackathon.status === "Completed"
-                                ? "secondary"
-                                : "outline"
+                                : registration.status === "upcoming"
+                                ? "outline"
+                                : "secondary"
                             }
                             className={
-                              hackathon.status === "In Progress"
-                                ? "bg-blue-500/10 text-blue-500"
-                                : hackathon.status === "Completed"
-                                ? "bg-green-500/10 text-green-500"
+                              registration.status === "live"
+                                ? "bg-emerald-500/10 text-emerald-600"
+                                : registration.status === "upcoming"
+                                ? "bg-blue-500/10 text-blue-600"
                                 : ""
                             }
                           >
-                            {hackathon.status}
+                            {registration.status}
                           </Badge>
                         </TableCell>
-                        <TableCell>
-                          <Badge
-                            variant={
-                              hackathon.submission === "Submitted"
-                                ? "default"
-                                : "outline"
-                            }
-                            className={
-                              hackathon.submission === "Submitted"
-                                ? "bg-green-500/10 text-green-500"
-                                : "bg-yellow-500/10 text-yellow-500"
-                            }
-                          >
-                            {hackathon.submission}
-                          </Badge>
+                        <TableCell className="text-muted-foreground capitalize">
+                          {registration.mode}
                         </TableCell>
                         <TableCell className="text-muted-foreground flex items-center gap-2">
                           <CalendarDays className="h-4 w-4" />
-                          {hackathon.deadline}
+                          {formatDate(registration.startDate)} - {formatDate(registration.endDate)}
                         </TableCell>
                         <TableCell className="font-medium text-foreground">
-                          {hackathon.prize}
+                          ${registration.prizeAmount.toLocaleString()}
                         </TableCell>
                         <TableCell className="text-right">
                           <DropdownMenu>
@@ -199,24 +212,14 @@ export default function ParticipantHackathonsPage() {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                              <DropdownMenuItem
-                                onClick={() => handleViewDetails(hackathon.id)}
-                                className="gap-2"
-                              >
-                                <ExternalLink className="h-4 w-4" />
-                                View Details
+                              <DropdownMenuItem asChild className="gap-2">
+                                <Link href={`/hackathons/${registration.hackathonId}`}>
+                                  <ExternalLink className="h-4 w-4" />
+                                  View Details
+                                </Link>
                               </DropdownMenuItem>
-                              {hackathon.submission === "Not submitted" && (
-                                <DropdownMenuItem
-                                  onClick={() => handleSubmitProject(hackathon.id)}
-                                  className="gap-2"
-                                >
-                                  <Edit className="h-4 w-4" />
-                                  Submit Project
-                                </DropdownMenuItem>
-                              )}
                               <DropdownMenuItem
-                                onClick={() => handleWithdraw(hackathon.id)}
+                                onClick={() => handleWithdraw(registration.id)}
                                 className="gap-2 text-destructive"
                               >
                                 <Trash2 className="h-4 w-4" />
@@ -245,23 +248,23 @@ export default function ParticipantHackathonsPage() {
                   Total Registered
                 </p>
                 <p className="mt-2 text-2xl font-bold text-foreground">
-                  {hackathons.length}
+                  {registrations.length}
                 </p>
               </div>
               <div className="rounded-lg border border-border p-4">
                 <p className="text-sm font-medium text-muted-foreground">
-                  Submissions Made
+                  Live Events
                 </p>
                 <p className="mt-2 text-2xl font-bold text-foreground">
-                  {hackathons.filter((h) => h.submission === "Submitted").length}
+                  {registrations.filter((r) => r.status === "live").length}
                 </p>
               </div>
               <div className="rounded-lg border border-border p-4">
                 <p className="text-sm font-medium text-muted-foreground">
-                  Completed
+                  Upcoming
                 </p>
                 <p className="mt-2 text-2xl font-bold text-foreground">
-                  {hackathons.filter((h) => h.status === "Completed").length}
+                  {registrations.filter((r) => r.status === "upcoming").length}
                 </p>
               </div>
             </div>

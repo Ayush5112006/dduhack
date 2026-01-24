@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getSession } from "@/lib/session"
-import { prisma } from "@/lib/prisma"
+import { getPrismaClient } from "@/lib/prisma-multi-db"
 
 export async function GET(request: NextRequest) {
   try {
@@ -10,8 +10,11 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
+    // Get database client for user's role
+    const db = getPrismaClient(session.userRole)
+
     // Get user with all related data
-    const user = await prisma.user.findUnique({
+    const user = await db.user.findUnique({
       where: { id: session.userId },
       include: {
         profile: true,

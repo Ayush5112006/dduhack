@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getSession } from "@/lib/session"
-import { prisma } from "@/lib/prisma"
+import { getPrismaClient } from "@/lib/prisma-multi-db"
 import bcrypt from "bcrypt"
 
 function validatePasswordStrength(password: string): { valid: boolean; error?: string } {
@@ -30,6 +30,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Not authenticated" }, { status: 401 })
   }
 
+  const db = getPrismaClient(session.userRole)
+
   try {
     const body = await request.json()
     const { currentPassword, newPassword, confirmPassword } = body
@@ -57,7 +59,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const user = await prisma.user.findUnique({
+    const user = await db.user.findUnique({
       where: { id: session.userId }
     })
 
@@ -76,7 +78,7 @@ export async function POST(request: NextRequest) {
 
     const hashedPassword = await bcrypt.hash(newPassword, 10)
 
-    await prisma.user.update({
+    await db.user.update({
       where: { id: session.userId },
       data: { password: hashedPassword }
     })

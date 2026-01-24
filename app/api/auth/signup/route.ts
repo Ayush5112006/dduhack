@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createSession } from "@/lib/session"
-import { prisma } from "@/lib/prisma"
+import { getPrismaClient } from "@/lib/prisma-multi-db"
 import bcrypt from "bcrypt"
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { email, password, userName, userRole } = body
+    const { email, password, userName, userRole, role } = body
 
     if (!email || !password) {
       return NextResponse.json({ error: "Email and password are required" }, { status: 400 })
@@ -16,8 +16,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Password must be at least 6 characters" }, { status: 400 })
     }
 
+    // Get database for the selected role
+    const selectedRole = role || userRole || "participant"
+    const db = getPrismaClient(selectedRole)
+
     // Check if user already exists
-    const existingUser = await prisma.user.findUnique({
+    const existingUser = await db.user.findUnique({
       where: { email }
     })
 
@@ -29,7 +33,7 @@ export async function POST(request: NextRequest) {
     const hashedPassword = await bcrypt.hash(password, 10)
 
     // Create user in database
-    const user = await prisma.user.create({
+    const user = await db.user.create({
       data: {
         email,
         name: userName || email.split("@")[0],

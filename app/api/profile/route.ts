@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import { getSession } from "@/lib/session"
-import { prisma } from "@/lib/prisma"
+import { getPrismaClient } from "@/lib/prisma-multi-db"
 
 // GET: Get current user's profile
 export async function GET() {
@@ -9,7 +9,10 @@ export async function GET() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
-  const user = await prisma.user.findUnique({
+  // Get database client for user's role
+  const db = getPrismaClient(session.userRole)
+
+  const user = await db.user.findUnique({
     where: { id: session.userId },
     include: { profile: true, registrations: true, submissions: true, certificates: true },
   })
@@ -52,11 +55,14 @@ export async function PUT(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
+  // Get database client for user's role
+  const db = getPrismaClient(session.userRole)
+
   const body = await request.json()
   const { bio, location, website, github, linkedin, twitter, skills, interests, avatar } = body
 
   // Upsert profile
-  const profile = await prisma.userProfile.upsert({
+  const profile = await db.userProfile.upsert({
     where: { userId: session.userId },
     update: {
       bio,
@@ -85,7 +91,7 @@ export async function PUT(request: Request) {
 
   // Also store avatar on user for easy access elsewhere
   if (avatar !== undefined) {
-    await prisma.user.update({ where: { id: session.userId }, data: { avatar } })
+    await db.user.update({ where: { id: session.userId }, data: { avatar } })
   }
 
   return NextResponse.json({ profile })

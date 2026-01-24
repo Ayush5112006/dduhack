@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getSession, destroySession } from "@/lib/session"
-import { prisma } from "@/lib/prisma"
+import { getPrismaClient } from "@/lib/prisma-multi-db"
 
 export async function POST(request: NextRequest) {
   const session = await getSession()
@@ -9,9 +9,11 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Not authenticated" }, { status: 401 })
   }
 
+  const db = getPrismaClient(session.userRole)
+
   try {
     // Delete all sessions for this user from the database
-    await prisma.session.deleteMany({
+    await db.session.deleteMany({
       where: { userId: session.userId },
     })
 

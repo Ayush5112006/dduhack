@@ -1,8 +1,12 @@
+"use client"
+
+import { useState } from "react"
 import Link from "next/link"
 import { DashboardSidebar } from "@/components/dashboard/sidebar"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import { Input } from "@/components/ui/input"
 import {
   Table,
   TableBody,
@@ -11,67 +15,96 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { Trophy, FileText, Award, Bell, Calendar, ArrowRight, ExternalLink } from "lucide-react"
+import { Trophy, FileText, Award, Bell, Calendar, ArrowRight, ExternalLink, Trash2, Edit, Search } from "lucide-react"
+import { useToast } from "@/components/toast-provider"
 
-const stats = [
-  { title: "Registered Hackathons", value: "5", icon: Trophy, change: "+2 this month" },
-  { title: "Submissions", value: "3", icon: FileText, change: "1 pending review" },
-  { title: "Certificates", value: "2", icon: Award, change: "View all" },
-  { title: "Notifications", value: "8", icon: Bell, change: "3 unread" },
+const mockStats = [
+  { title: "Active Hackathons", value: "3", change: "+1 this month", icon: Trophy },
+  { title: "Submissions", value: "5", change: "+2 pending review", icon: FileText },
+  { title: "Wins", value: "2", change: "Last win 2 weeks ago", icon: Award },
+  { title: "Notifications", value: "4", change: "2 unread", icon: Bell },
 ]
 
-const myHackathons = [
-  {
-    id: "1",
-    name: "AI Innovation Challenge 2026",
-    status: "In Progress",
-    deadline: "Feb 22, 2026",
-    submission: "Not submitted",
-    role: "Participant",
-  },
-  {
-    id: "2",
-    name: "Web3 Builders Summit",
-    status: "Registered",
-    deadline: "Mar 12, 2026",
-    submission: "-",
-    role: "Team Lead",
-  },
-  {
-    id: "3",
-    name: "GreenTech Sustainability Hack",
-    status: "Completed",
-    deadline: "Mar 7, 2026",
-    submission: "Submitted",
-    role: "Participant",
-  },
+const mockMyHackathons = [
+  { id: "1", name: "Web3 Hackathon 2026", role: "Full Stack Developer", status: "In Progress", deadline: "Jan 30, 2026", submission: "Not submitted" },
+  { id: "2", name: "AI Challenge 2026", role: "ML Engineer", status: "In Progress", deadline: "Feb 5, 2026", submission: "Submitted" },
+  { id: "3", name: "Climate Tech Hack", role: "Backend Developer", status: "Completed", deadline: "Jan 15, 2026", submission: "Submitted" },
 ]
 
-const notifications = [
-  {
-    id: "1",
-    title: "Submission deadline approaching",
-    message: "AI Innovation Challenge deadline is in 2 days",
-    time: "2 hours ago",
-    unread: true,
-  },
-  {
-    id: "2",
-    title: "New hackathon recommendation",
-    message: "Check out HealthTech Revolution based on your interests",
-    time: "5 hours ago",
-    unread: true,
-  },
-  {
-    id: "3",
-    title: "Team invite received",
-    message: "Sarah invited you to join Team Quantum",
-    time: "1 day ago",
-    unread: false,
-  },
+const mockNotifications = [
+  { id: "1", title: "Submission Received", message: "Your AI Challenge submission has been received", time: "2 hours ago", unread: true },
+  { id: "2", title: "Results Announced", message: "Winners of Climate Tech Hack announced", time: "5 hours ago", unread: true },
+  { id: "3", title: "New Hackathon", message: "Blockchain Hack 2026 is now open for registration", time: "1 day ago", unread: false },
+  { id: "4", title: "Reminder", message: "Your Web3 Hackathon submission deadline is approaching", time: "2 days ago", unread: false },
 ]
 
 export default function ParticipantDashboard() {
+  const [myHackathons, setMyHackathons] = useState(mockMyHackathons)
+  const [notifications, setNotifications] = useState(mockNotifications)
+  const [stats] = useState(mockStats)
+  const [searchQuery, setSearchQuery] = useState("")
+  const { addToast } = useToast()
+
+  const filteredHackathons = myHackathons.filter(h =>
+    h.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    h.role.toLowerCase().includes(searchQuery.toLowerCase())
+  )
+
+  const handleDeleteHackathon = (id: string) => {
+    if (confirm("Are you sure you want to delete this hackathon from your list?")) {
+      setMyHackathons(myHackathons.filter(h => h.id !== id))
+      addToast("Hackathon removed successfully!", "success")
+    }
+  }
+
+  const handleEditHackathon = (id: string) => {
+    const hackathon = myHackathons.find(h => h.id === id)
+    if (!hackathon) return
+    
+    const newRole = prompt("Update your role:", hackathon.role)
+    if (newRole) {
+      setMyHackathons(myHackathons.map(h => 
+        h.id === id ? { ...h, role: newRole } : h
+      ))
+      addToast("Role updated successfully!", "success")
+    }
+  }
+
+  const handleSubmitProject = (id: string) => {
+    const hackathon = myHackathons.find(h => h.id === id)
+    if (!hackathon) return
+    
+    if (hackathon.submission === "Submitted") {
+      addToast("You have already submitted for this hackathon!", "info")
+      return
+    }
+
+    const projectUrl = prompt("Enter your project submission URL (GitHub link):")
+    if (projectUrl) {
+      if (!projectUrl.includes("github.com")) {
+        addToast("Please enter a valid GitHub URL!", "error")
+        return
+      }
+      setMyHackathons(myHackathons.map(h => 
+        h.id === id ? { ...h, submission: "Submitted" } : h
+      ))
+      addToast("Project submitted successfully!", "success")
+    }
+  }
+
+  const handleClearNotification = (id: string) => {
+    setNotifications(notifications.filter(n => n.id !== id))
+    addToast("Notification removed", "info")
+  }
+
+  const handleMarkAsRead = (id: string) => {
+    setNotifications(notifications.map(n =>
+      n.id === id ? { ...n, unread: false } : n
+    ))
+  }
+
+  const unreadCount = notifications.filter(n => n.unread).length
+
   return (
     <div className="min-h-screen bg-background">
       <DashboardSidebar type="participant" />
@@ -111,7 +144,16 @@ export default function ParticipantDashboard() {
                   </Button>
                 </Link>
               </CardHeader>
-              <CardContent>
+              <CardContent className="space-y-4">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    placeholder="Search hackathons..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="bg-secondary pl-9"
+                  />
+                </div>
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -119,55 +161,89 @@ export default function ParticipantDashboard() {
                       <TableHead>Status</TableHead>
                       <TableHead>Deadline</TableHead>
                       <TableHead>Submission</TableHead>
-                      <TableHead></TableHead>
+                      <TableHead>Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {myHackathons.map((hackathon) => (
-                      <TableRow key={hackathon.id}>
-                        <TableCell>
-                          <div>
-                            <p className="font-medium text-foreground">{hackathon.name}</p>
-                            <p className="text-xs text-muted-foreground">{hackathon.role}</p>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <Badge
-                            variant={
-                              hackathon.status === "In Progress"
-                                ? "default"
-                                : hackathon.status === "Completed"
-                                ? "secondary"
-                                : "outline"
-                            }
-                          >
-                            {hackathon.status}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-muted-foreground">{hackathon.deadline}</TableCell>
-                        <TableCell>
-                          <Badge
-                            variant={
-                              hackathon.submission === "Submitted"
-                                ? "default"
-                                : hackathon.submission === "Not submitted"
-                                ? "destructive"
-                                : "outline"
-                            }
-                            className={hackathon.submission === "Submitted" ? "bg-green-500/10 text-green-500" : ""}
-                          >
-                            {hackathon.submission}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <Link href={`/hackathons/${hackathon.id}`}>
-                            <Button variant="ghost" size="icon">
-                              <ExternalLink className="h-4 w-4" />
-                            </Button>
-                          </Link>
+                    {filteredHackathons.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={5} className="text-center text-muted-foreground py-4">
+                          No hackathons found
                         </TableCell>
                       </TableRow>
-                    ))}
+                    ) : (
+                      filteredHackathons.map((hackathon) => (
+                        <TableRow key={hackathon.id}>
+                          <TableCell>
+                            <div>
+                              <p className="font-medium text-foreground">{hackathon.name}</p>
+                              <p className="text-xs text-muted-foreground">{hackathon.role}</p>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <Badge
+                              variant={
+                                hackathon.status === "In Progress"
+                                  ? "default"
+                                  : hackathon.status === "Completed"
+                                  ? "secondary"
+                                  : "outline"
+                              }
+                            >
+                              {hackathon.status}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-muted-foreground">{hackathon.deadline}</TableCell>
+                          <TableCell>
+                            <Badge
+                              variant={
+                                hackathon.submission === "Submitted"
+                                  ? "default"
+                                  : hackathon.submission === "Not submitted"
+                                  ? "destructive"
+                                  : "outline"
+                              }
+                              className={hackathon.submission === "Submitted" ? "bg-green-500/10 text-green-500" : ""}
+                            >
+                              {hackathon.submission}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex gap-1">
+                              <Button 
+                                variant="ghost" 
+                                size="sm"
+                                onClick={() => handleSubmitProject(hackathon.id)}
+                                title="Submit Project"
+                              >
+                                <FileText className="h-4 w-4" />
+                              </Button>
+                              <Button 
+                                variant="ghost" 
+                                size="sm"
+                                onClick={() => handleEditHackathon(hackathon.id)}
+                                title="Edit Role"
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                              <Button 
+                                variant="ghost" 
+                                size="sm"
+                                onClick={() => handleDeleteHackathon(hackathon.id)}
+                                title="Delete"
+                              >
+                                <Trash2 className="h-4 w-4 text-red-500" />
+                              </Button>
+                              <Link href={`/hackathons/${hackathon.id}`}>
+                                <Button variant="ghost" size="sm">
+                                  <ExternalLink className="h-4 w-4" />
+                                </Button>
+                              </Link>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
                   </TableBody>
                 </Table>
               </CardContent>
@@ -177,7 +253,9 @@ export default function ParticipantDashboard() {
           <div>
             <Card className="border-border bg-card">
               <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle>Notifications</CardTitle>
+                <CardTitle>
+                  Notifications {unreadCount > 0 && <Badge className="ml-2">{unreadCount}</Badge>}
+                </CardTitle>
                 <Link href="/dashboard/notifications">
                   <Button variant="ghost" size="sm" className="gap-1">
                     View all <ArrowRight className="h-4 w-4" />
@@ -186,27 +264,48 @@ export default function ParticipantDashboard() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {notifications.map((notification) => (
-                    <div
-                      key={notification.id}
-                      className={`rounded-lg border border-border p-4 ${
-                        notification.unread ? "bg-primary/5" : "bg-transparent"
-                      }`}
-                    >
-                      <div className="flex items-start justify-between">
-                        <h4 className="text-sm font-medium text-foreground">
-                          {notification.title}
-                        </h4>
-                        {notification.unread && (
-                          <div className="h-2 w-2 rounded-full bg-primary" />
-                        )}
+                  {notifications.length === 0 ? (
+                    <p className="text-center text-sm text-muted-foreground py-4">No notifications</p>
+                  ) : (
+                    notifications.map((notification) => (
+                      <div
+                        key={notification.id}
+                        className={`rounded-lg border border-border p-4 ${
+                          notification.unread ? "bg-primary/5" : "bg-transparent"
+                        }`}
+                      >
+                        <div className="flex items-start justify-between">
+                          <h4 className="text-sm font-medium text-foreground">
+                            {notification.title}
+                          </h4>
+                          <div className="flex gap-1">
+                            {notification.unread && (
+                              <Button 
+                                size="sm" 
+                                variant="ghost"
+                                onClick={() => handleMarkAsRead(notification.id)}
+                                title="Mark as read"
+                              >
+                                <div className="h-2 w-2 rounded-full bg-primary" />
+                              </Button>
+                            )}
+                            <Button 
+                              size="sm" 
+                              variant="ghost"
+                              onClick={() => handleClearNotification(notification.id)}
+                              title="Clear"
+                            >
+                              ✕
+                            </Button>
+                          </div>
+                        </div>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          {notification.message}
+                        </p>
+                        <p className="mt-2 text-xs text-muted-foreground">{notification.time}</p>
                       </div>
-                      <p className="mt-1 text-xs text-muted-foreground">
-                        {notification.message}
-                      </p>
-                      <p className="mt-2 text-xs text-muted-foreground">{notification.time}</p>
-                    </div>
-                  ))}
+                    ))
+                  )}
                 </div>
               </CardContent>
             </Card>

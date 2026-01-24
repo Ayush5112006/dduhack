@@ -42,54 +42,100 @@ import {
   Megaphone,
   TrendingUp,
 } from "lucide-react"
-import { useSearchParams } from "next/navigation"
+import { useSearchParams, useRouter } from "next/navigation"
 import { Suspense } from "react"
 import Loading from "./loading"
 
-const stats = [
-  { title: "Total Hackathons", value: "3", icon: Trophy, change: "+1 this month" },
-  { title: "Total Participants", value: "2,847", icon: Users, change: "+342 this week" },
-  { title: "Submissions", value: "1,234", icon: FileText, change: "85% reviewed" },
-  { title: "Page Views", value: "45.2K", icon: Eye, change: "+12% from last month" },
-]
-
-const hackathons = [
-  {
-    id: "1",
-    name: "AI Innovation Challenge 2026",
-    status: "Active",
-    participants: 1234,
-    submissions: 567,
-    deadline: "Feb 22, 2026",
-  },
-  {
-    id: "2",
-    name: "Web3 Builders Summit",
-    status: "Draft",
-    participants: 0,
-    submissions: 0,
-    deadline: "Mar 12, 2026",
-  },
-  {
-    id: "3",
-    name: "GreenTech Sustainability Hack",
-    status: "Completed",
-    participants: 542,
-    submissions: 321,
-    deadline: "Mar 7, 2026",
-  },
-]
-
-const recentParticipants = [
-  { name: "Alice Johnson", email: "alice@example.com", hackathon: "AI Innovation Challenge", team: "Team Quantum" },
-  { name: "Bob Smith", email: "bob@example.com", hackathon: "AI Innovation Challenge", team: "ByteBuilders" },
-  { name: "Carol Williams", email: "carol@example.com", hackathon: "AI Innovation Challenge", team: "Solo" },
-  { name: "David Brown", email: "david@example.com", hackathon: "AI Innovation Challenge", team: "GreenCoders" },
-]
+const recentParticipants: Array<{
+  id: string
+  name: string
+  email: string
+  hackathon: string
+  joinDate: string
+}> = []
 
 export default function OrganizerDashboard() {
-  const [searchQuery, setSearchQuery] = useState("")
+  const router = useRouter()
   const searchParams = useSearchParams()
+  const [searchQuery, setSearchQuery] = useState("")
+  const [hackathons, setHackathons] = useState<Array<{
+    id: string
+    name: string
+    status: string
+    participants: number
+    submissions: number
+    deadline: string
+  }>>([])
+  const [newHackathonName, setNewHackathonName] = useState("")
+  const [isDialogOpen, setIsDialogOpen] = useState(false)
+
+  // Calculate dynamic stats
+  const totalHackathons = hackathons.length
+  const totalParticipants = hackathons.reduce((sum, h) => sum + h.participants, 0)
+  const totalSubmissions = hackathons.reduce((sum, h) => sum + h.submissions, 0)
+  const reviewedPercentage =
+    totalSubmissions > 0
+      ? Math.round((hackathons.filter((h) => h.status === "Completed").reduce((sum, h) => sum + h.submissions, 0) / totalSubmissions) * 100)
+      : 0
+
+  const stats = [
+    { title: "Total Hackathons", value: totalHackathons.toString(), icon: Trophy, change: "+1 this month" },
+    { title: "Total Participants", value: totalParticipants.toLocaleString(), icon: Users, change: "+342 this week" },
+    { title: "Submissions", value: totalSubmissions.toLocaleString(), icon: FileText, change: `${reviewedPercentage}% reviewed` },
+    { title: "Page Views", value: "45.2K", icon: Eye, change: "+12% from last month" },
+  ]
+
+  // Filter hackathons based on search query
+  const filteredHackathons = hackathons.filter((h) =>
+    h.name.toLowerCase().includes(searchQuery.toLowerCase())
+  )
+
+  // Handle creating a new hackathon
+  const handleCreateHackathon = () => {
+    if (newHackathonName.trim()) {
+      const newHackathon = {
+        id: (hackathons.length + 1).toString(),
+        name: newHackathonName,
+        status: "Draft",
+        participants: 0,
+        submissions: 0,
+        deadline: "TBD",
+      }
+      setHackathons([...hackathons, newHackathon])
+      setNewHackathonName("")
+      setIsDialogOpen(false)
+    }
+  }
+
+  // Handle deleting a hackathon
+  const handleDeleteHackathon = (id: string) => {
+    setHackathons(hackathons.filter((h) => h.id !== id))
+  }
+
+  // Handle viewing hackathon details
+  const handleViewHackathon = (id: string) => {
+    router.push(`/organizer/dashboard/hackathons/${id}`)
+  }
+
+  // Handle editing hackathon
+  const handleEditHackathon = (id: string) => {
+    router.push(`/organizer/dashboard/hackathons/${id}/edit`)
+  }
+
+  // Handle viewing participants
+  const handleViewParticipants = (id: string) => {
+    router.push(`/organizer/dashboard/participants?hackathon=${id}`)
+  }
+
+  // Handle viewing submissions
+  const handleViewSubmissions = (id: string) => {
+    router.push(`/organizer/dashboard/submissions?hackathon=${id}`)
+  }
+
+  // Handle announcing results
+  const handleAnnounceResults = (id: string) => {
+    alert(`Announcing results for hackathon ${id}`)
+  }
 
   return (
     <Suspense fallback={<Loading />}>
@@ -103,7 +149,7 @@ export default function OrganizerDashboard() {
                 Manage your hackathons and track performance
               </p>
             </div>
-            <Dialog>
+            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
               <DialogTrigger asChild>
                 <Button className="gap-2">
                   <Plus className="h-4 w-4" />
@@ -122,11 +168,32 @@ export default function OrganizerDashboard() {
                     <label htmlFor="hackathonName" className="text-sm font-medium text-foreground">
                       Hackathon Name
                     </label>
-                    <Input id="hackathonName" placeholder="Enter hackathon name" className="bg-secondary" />
+                    <Input 
+                      id="hackathonName" 
+                      placeholder="Enter hackathon name" 
+                      className="bg-secondary"
+                      value={newHackathonName}
+                      onChange={(e) => setNewHackathonName(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          handleCreateHackathon()
+                        }
+                      }}
+                    />
                   </div>
                   <div className="flex justify-end gap-2">
-                    <Button variant="outline">Cancel</Button>
-                    <Button>Continue</Button>
+                    <Button 
+                      variant="outline"
+                      onClick={() => {
+                        setIsDialogOpen(false)
+                        setNewHackathonName("")
+                      }}
+                    >
+                      Cancel
+                    </Button>
+                    <Button onClick={handleCreateHackathon} disabled={!newHackathonName.trim()}>
+                      Continue
+                    </Button>
                   </div>
                 </div>
               </DialogContent>
@@ -165,76 +232,100 @@ export default function OrganizerDashboard() {
                 </div>
               </CardHeader>
               <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Hackathon</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Participants</TableHead>
-                      <TableHead>Submissions</TableHead>
-                      <TableHead>Deadline</TableHead>
-                      <TableHead>Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {hackathons.map((hackathon) => (
-                      <TableRow key={hackathon.id}>
-                        <TableCell className="font-medium text-foreground">{hackathon.name}</TableCell>
-                        <TableCell>
-                          <Badge
-                            variant={
-                              hackathon.status === "Active"
-                                ? "default"
-                                : hackathon.status === "Completed"
-                                ? "secondary"
-                                : "outline"
-                            }
-                          >
-                            {hackathon.status}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-muted-foreground">
-                          {hackathon.participants.toLocaleString()}
-                        </TableCell>
-                        <TableCell className="text-muted-foreground">
-                          {hackathon.submissions.toLocaleString()}
-                        </TableCell>
-                        <TableCell className="text-muted-foreground">{hackathon.deadline}</TableCell>
-                        <TableCell>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon">
-                                <MoreHorizontal className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem className="gap-2">
-                                <Eye className="h-4 w-4" /> View
-                              </DropdownMenuItem>
-                              <DropdownMenuItem className="gap-2">
-                                <Edit className="h-4 w-4" /> Edit
-                              </DropdownMenuItem>
-                              <DropdownMenuItem className="gap-2">
-                                <Users className="h-4 w-4" /> Participants
-                              </DropdownMenuItem>
-                              <DropdownMenuItem className="gap-2">
-                                <FileText className="h-4 w-4" /> Submissions
-                              </DropdownMenuItem>
-                              {hackathon.status === "Active" && (
-                                <DropdownMenuItem className="gap-2 text-primary">
-                                  <Megaphone className="h-4 w-4" /> Announce Results
-                                </DropdownMenuItem>
-                              )}
-                              <DropdownMenuItem className="gap-2 text-destructive">
-                                <Trash2 className="h-4 w-4" /> Delete
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </TableCell>
+                {filteredHackathons.length === 0 ? (
+                  <div className="py-8 text-center">
+                    <p className="text-muted-foreground">No hackathons found. {searchQuery && "Try a different search."}</p>
+                  </div>
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Hackathon</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Participants</TableHead>
+                        <TableHead>Submissions</TableHead>
+                        <TableHead>Deadline</TableHead>
+                        <TableHead>Actions</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredHackathons.map((hackathon) => (
+                        <TableRow key={hackathon.id}>
+                          <TableCell className="font-medium text-foreground">{hackathon.name}</TableCell>
+                          <TableCell>
+                            <Badge
+                              variant={
+                                hackathon.status === "Active"
+                                  ? "default"
+                                  : hackathon.status === "Completed"
+                                  ? "secondary"
+                                  : "outline"
+                              }
+                            >
+                              {hackathon.status}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-muted-foreground">
+                            {hackathon.participants.toLocaleString()}
+                          </TableCell>
+                          <TableCell className="text-muted-foreground">
+                            {hackathon.submissions.toLocaleString()}
+                          </TableCell>
+                          <TableCell className="text-muted-foreground">{hackathon.deadline}</TableCell>
+                          <TableCell>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon">
+                                  <MoreHorizontal className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem 
+                                  className="gap-2"
+                                  onClick={() => handleViewHackathon(hackathon.id)}
+                                >
+                                  <Eye className="h-4 w-4" /> View
+                                </DropdownMenuItem>
+                                <DropdownMenuItem 
+                                  className="gap-2"
+                                  onClick={() => handleEditHackathon(hackathon.id)}
+                                >
+                                  <Edit className="h-4 w-4" /> Edit
+                                </DropdownMenuItem>
+                                <DropdownMenuItem 
+                                  className="gap-2"
+                                  onClick={() => handleViewParticipants(hackathon.id)}
+                                >
+                                  <Users className="h-4 w-4" /> Participants
+                                </DropdownMenuItem>
+                                <DropdownMenuItem 
+                                  className="gap-2"
+                                  onClick={() => handleViewSubmissions(hackathon.id)}
+                                >
+                                  <FileText className="h-4 w-4" /> Submissions
+                                </DropdownMenuItem>
+                                {hackathon.status === "Active" && (
+                                  <DropdownMenuItem 
+                                    className="gap-2 text-primary"
+                                    onClick={() => handleAnnounceResults(hackathon.id)}
+                                  >
+                                    <Megaphone className="h-4 w-4" /> Announce Results
+                                  </DropdownMenuItem>
+                                )}
+                                <DropdownMenuItem 
+                                  className="gap-2 text-destructive"
+                                  onClick={() => handleDeleteHackathon(hackathon.id)}
+                                >
+                                  <Trash2 className="h-4 w-4" /> Delete
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                )}
               </CardContent>
             </Card>
           </div>
@@ -264,7 +355,7 @@ export default function OrganizerDashboard() {
                         </TableCell>
                         <TableCell className="text-muted-foreground">{participant.hackathon}</TableCell>
                         <TableCell>
-                          <Badge variant="outline">{participant.team}</Badge>
+                          <Badge variant="outline">{participant.joinDate}</Badge>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -279,28 +370,44 @@ export default function OrganizerDashboard() {
               </CardHeader>
               <CardContent>
                 <div className="grid gap-4 sm:grid-cols-2">
-                  <Button variant="outline" className="h-auto flex-col items-start gap-2 p-4 bg-transparent">
+                  <Button 
+                    variant="outline" 
+                    className="h-auto flex-col items-start gap-2 p-4 bg-transparent"
+                    onClick={() => router.push("/organizer/dashboard/participants")}
+                  >
                     <Users className="h-5 w-5 text-primary" />
                     <div className="text-left">
                       <p className="font-medium">Manage Participants</p>
                       <p className="text-xs text-muted-foreground">View and manage registrations</p>
                     </div>
                   </Button>
-                  <Button variant="outline" className="h-auto flex-col items-start gap-2 p-4 bg-transparent">
+                  <Button 
+                    variant="outline" 
+                    className="h-auto flex-col items-start gap-2 p-4 bg-transparent"
+                    onClick={() => router.push("/organizer/dashboard/submissions")}
+                  >
                     <FileText className="h-5 w-5 text-primary" />
                     <div className="text-left">
                       <p className="font-medium">Review Submissions</p>
                       <p className="text-xs text-muted-foreground">Judge and score projects</p>
                     </div>
                   </Button>
-                  <Button variant="outline" className="h-auto flex-col items-start gap-2 p-4 bg-transparent">
+                  <Button 
+                    variant="outline" 
+                    className="h-auto flex-col items-start gap-2 p-4 bg-transparent"
+                    onClick={() => alert("Results announcement feature coming soon!")}
+                  >
                     <Megaphone className="h-5 w-5 text-primary" />
                     <div className="text-left">
                       <p className="font-medium">Announce Results</p>
                       <p className="text-xs text-muted-foreground">Publish winners and prizes</p>
                     </div>
                   </Button>
-                  <Button variant="outline" className="h-auto flex-col items-start gap-2 p-4 bg-transparent">
+                  <Button 
+                    variant="outline" 
+                    className="h-auto flex-col items-start gap-2 p-4 bg-transparent"
+                    onClick={() => alert("Analytics coming soon!")}
+                  >
                     <TrendingUp className="h-5 w-5 text-primary" />
                     <div className="text-left">
                       <p className="font-medium">View Analytics</p>

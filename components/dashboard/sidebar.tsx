@@ -1,8 +1,9 @@
 "use client"
 
 import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import { cn } from "@/lib/utils"
+import { useSession } from "@/components/session-provider"
 import {
   LayoutDashboard,
   Trophy,
@@ -47,6 +48,13 @@ type DashboardType = "participant" | "organizer" | "admin"
 
 export function DashboardSidebar({ type }: { type: DashboardType }) {
   const pathname = usePathname()
+  const router = useRouter()
+  const { logout } = useSession()
+  
+  const handleLogout = async () => {
+    await logout()
+    router.push("/auth/login")
+  }
   
   const links = type === "participant" 
     ? participantLinks 
@@ -110,6 +118,7 @@ export function DashboardSidebar({ type }: { type: DashboardType }) {
           </div>
           <button
             type="button"
+            onClick={handleLogout}
             className="mt-2 flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
           >
             <LogOut className="h-4 w-4" />

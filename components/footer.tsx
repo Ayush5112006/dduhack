@@ -1,29 +1,10 @@
 import Link from "next/link"
 
 const footerLinks = {
-  platform: [
-    { name: "Browse Hackathons", href: "/hackathons" },
-    { name: "Host a Hackathon", href: "/organizer/dashboard" },
-    { name: "For Sponsors", href: "#" },
-    { name: "Success Stories", href: "#" },
-  ],
-  resources: [
-    { name: "Help Center", href: "#" },
-    { name: "Blog", href: "#" },
-    { name: "Guides", href: "#" },
-    { name: "API Docs", href: "#" },
-  ],
-  company: [
-    { name: "About Us", href: "#" },
-    { name: "Careers", href: "#" },
-    { name: "Press", href: "#" },
-    { name: "Contact", href: "#" },
-  ],
-  legal: [
-    { name: "Privacy Policy", href: "#" },
-    { name: "Terms of Service", href: "#" },
-    { name: "Cookie Policy", href: "#" },
-  ],
+  platform: [] as Array<{ name: string; href: string }>,
+  resources: [] as Array<{ name: string; href: string }>,
+  company: [] as Array<{ name: string; href: string }>,
+  legal: [] as Array<{ name: string; href: string }>,
 }
 
 export function Footer() {

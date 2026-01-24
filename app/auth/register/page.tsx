@@ -36,6 +36,59 @@ export default function RegisterPage() {
     // Simulate registration
     await new Promise((resolve) => setTimeout(resolve, 1000))
     setIsLoading(false)
+    // Redirect to dashboard after successful registration
+    window.location.href = "/dashboard"
+  }
+
+  const handleGoogleSignup = async () => {
+    setIsLoading(true)
+    try {
+      // Google OAuth URL - replace with your actual Google OAuth client ID
+      const googleAuthUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
+        `client_id=YOUR_GOOGLE_CLIENT_ID&` +
+        `redirect_uri=${window.location.origin}/auth/callback/google&` +
+        `response_type=code&` +
+        `scope=email profile&` +
+        `access_type=offline&` +
+        `prompt=consent`
+      
+      // For demo purposes, simulate OAuth flow
+      alert("Google OAuth would open here. For production, configure Google OAuth credentials in Google Cloud Console.")
+      console.log("Google Auth URL:", googleAuthUrl)
+      
+      // Simulate successful signup
+      await new Promise((resolve) => setTimeout(resolve, 1000))
+      window.location.href = "/dashboard"
+    } catch (error) {
+      console.error("Google signup error:", error)
+      alert("Google signup failed. Please try again.")
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleGithubSignup = async () => {
+    setIsLoading(true)
+    try {
+      // GitHub OAuth URL - replace with your actual GitHub OAuth client ID
+      const githubAuthUrl = `https://github.com/login/oauth/authorize?` +
+        `client_id=YOUR_GITHUB_CLIENT_ID&` +
+        `redirect_uri=${window.location.origin}/auth/callback/github&` +
+        `scope=user:email read:user`
+      
+      // For demo purposes, simulate OAuth flow
+      alert("GitHub OAuth would open here. For production, register an OAuth app at github.com/settings/developers.")
+      console.log("GitHub Auth URL:", githubAuthUrl)
+      
+      // Simulate successful signup
+      await new Promise((resolve) => setTimeout(resolve, 1000))
+      window.location.href = "/dashboard"
+    } catch (error) {
+      console.error("GitHub signup error:", error)
+      alert("GitHub signup failed. Please try again.")
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
@@ -101,11 +154,23 @@ export default function RegisterPage() {
             <CardContent>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="grid gap-4 sm:grid-cols-2">
-                  <Button variant="outline" type="button" className="gap-2 bg-transparent">
+                  <Button 
+                    variant="outline" 
+                    type="button" 
+                    className="gap-2 bg-transparent"
+                    onClick={handleGithubSignup}
+                    disabled={isLoading}
+                  >
                     <Github className="h-4 w-4" />
                     GitHub
                   </Button>
-                  <Button variant="outline" type="button" className="gap-2 bg-transparent">
+                  <Button 
+                    variant="outline" 
+                    type="button" 
+                    className="gap-2 bg-transparent"
+                    onClick={handleGoogleSignup}
+                    disabled={isLoading}
+                  >
                     <Chrome className="h-4 w-4" />
                     Google
                   </Button>

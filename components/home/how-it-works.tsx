@@ -1,27 +1,11 @@
 import { UserPlus, Code2, Send, Trophy } from "lucide-react"
 
-const steps = [
-  {
-    icon: UserPlus,
-    title: "Register",
-    description: "Create your account and build your developer profile to showcase your skills.",
-  },
-  {
-    icon: Code2,
-    title: "Build",
-    description: "Join a hackathon, form or find a team, and start building your innovative solution.",
-  },
-  {
-    icon: Send,
-    title: "Submit",
-    description: "Submit your project before the deadline with documentation and a demo video.",
-  },
-  {
-    icon: Trophy,
-    title: "Win",
-    description: "Get your project judged by experts and win amazing prizes and recognition.",
-  },
-]
+const steps: Array<{
+  number: number
+  title: string
+  description: string
+  icon: typeof UserPlus
+}> = []
 
 export function HowItWorks() {
   return (

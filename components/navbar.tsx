@@ -12,14 +12,10 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Search, ChevronDown, Menu, X } from "lucide-react"
 
-const categories = [
-  { name: "AI & Machine Learning", href: "/hackathons?category=ai" },
-  { name: "Web Development", href: "/hackathons?category=web" },
-  { name: "Mobile Apps", href: "/hackathons?category=mobile" },
-  { name: "Blockchain", href: "/hackathons?category=blockchain" },
-  { name: "Cybersecurity", href: "/hackathons?category=security" },
-  { name: "IoT & Hardware", href: "/hackathons?category=iot" },
-]
+const categories: Array<{
+  name: string
+  href: string
+}> = []
 
 export function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)

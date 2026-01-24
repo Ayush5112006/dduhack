@@ -9,18 +9,116 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Eye, EyeOff, Github, Chrome, ArrowLeft } from "lucide-react"
+import { Eye, EyeOff, Github, Chrome, ArrowLeft, Copy, Check } from "lucide-react"
+
+const DEFAULT_EMAIL = "demo@example.com"
+const DEFAULT_PASSWORD = "demo123"
 
 export default function LoginPage() {
+  const [email, setEmail] = useState("")
+  const [password, setPassword] = useState("")
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+  const [copied, setCopied] = useState<"email" | "password" | null>(null)
+
+  const handleCopyEmail = () => {
+    navigator.clipboard.writeText(DEFAULT_EMAIL)
+    setCopied("email")
+    setTimeout(() => setCopied(null), 2000)
+  }
+
+  const handleCopyPassword = () => {
+    navigator.clipboard.writeText(DEFAULT_PASSWORD)
+    setCopied("password")
+    setTimeout(() => setCopied(null), 2000)
+  }
+
+  const handleQuickLogin = () => {
+    setEmail(DEFAULT_EMAIL)
+    setPassword(DEFAULT_PASSWORD)
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
-    // Simulate login
-    await new Promise((resolve) => setTimeout(resolve, 1000))
-    setIsLoading(false)
+    
+    try {
+      const response = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          email,
+          password,
+          userName: email.split("@")[0],
+          userRole: "participant",
+        }),
+      })
+
+      if (response.ok) {
+        // Redirect to dashboard after successful login
+        window.location.href = "/dashboard"
+      } else {
+        const error = await response.json()
+        alert(error.error || "Login failed")
+      }
+    } catch (error) {
+      console.error("Login error:", error)
+      alert("Login failed. Please try again.")
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleGoogleLogin = async () => {
+    setIsLoading(true)
+    try {
+      // Google OAuth URL - replace with your actual Google OAuth client ID
+      const googleAuthUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
+        `client_id=YOUR_GOOGLE_CLIENT_ID&` +
+        `redirect_uri=${window.location.origin}/auth/callback/google&` +
+        `response_type=code&` +
+        `scope=email profile&` +
+        `access_type=offline&` +
+        `prompt=consent`
+      
+      // For demo purposes, simulate OAuth flow
+      alert("Google OAuth would open here. For production, configure Google OAuth credentials in Google Cloud Console.")
+      console.log("Google Auth URL:", googleAuthUrl)
+      
+      // Simulate successful login
+      await new Promise((resolve) => setTimeout(resolve, 1000))
+      window.location.href = "/dashboard"
+    } catch (error) {
+      console.error("Google login error:", error)
+      alert("Google login failed. Please try again.")
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleGithubLogin = async () => {
+    setIsLoading(true)
+    try {
+      // GitHub OAuth URL - replace with your actual GitHub OAuth client ID
+      const githubAuthUrl = `https://github.com/login/oauth/authorize?` +
+        `client_id=YOUR_GITHUB_CLIENT_ID&` +
+        `redirect_uri=${window.location.origin}/auth/callback/github&` +
+        `scope=user:email read:user`
+      
+      // For demo purposes, simulate OAuth flow
+      alert("GitHub OAuth would open here. For production, register an OAuth app at github.com/settings/developers.")
+      console.log("GitHub Auth URL:", githubAuthUrl)
+      
+      // Simulate successful login
+      await new Promise((resolve) => setTimeout(resolve, 1000))
+      window.location.href = "/dashboard"
+    } catch (error) {
+      console.error("GitHub login error:", error)
+      alert("GitHub login failed. Please try again.")
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
@@ -67,11 +165,23 @@ export default function LoginPage() {
             <CardContent>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="grid gap-4 sm:grid-cols-2">
-                  <Button variant="outline" type="button" className="gap-2 bg-transparent">
+                  <Button 
+                    variant="outline" 
+                    type="button" 
+                    className="gap-2 bg-transparent"
+                    onClick={handleGithubLogin}
+                    disabled={isLoading}
+                  >
                     <Github className="h-4 w-4" />
                     GitHub
                   </Button>
-                  <Button variant="outline" type="button" className="gap-2 bg-transparent">
+                  <Button 
+                    variant="outline" 
+                    type="button" 
+                    className="gap-2 bg-transparent"
+                    onClick={handleGoogleLogin}
+                    disabled={isLoading}
+                  >
                     <Chrome className="h-4 w-4" />
                     Google
                   </Button>
@@ -92,6 +202,8 @@ export default function LoginPage() {
                     id="email"
                     type="email"
                     placeholder="name@example.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
                     required
                     className="bg-secondary"
                   />
@@ -112,19 +224,76 @@ export default function LoginPage() {
                       id="password"
                       type={showPassword ? "text" : "password"}
                       placeholder="Enter your password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
                       required
-                      className="bg-secondary pr-10"
+                      className="pr-10 bg-secondary"
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
                       className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                      aria-label={showPassword ? "Hide password" : "Show password"}
                     >
                       {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </button>
                   </div>
                 </div>
+
+                {/* Demo Credentials Card */}
+                <Card className="border-yellow-500/30 bg-yellow-500/5">
+                  <CardContent className="pt-4">
+                    <p className="text-xs font-semibold text-yellow-600 mb-3">DEMO CREDENTIALS</p>
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-xs text-muted-foreground">Email:</p>
+                          <p className="text-sm font-mono text-foreground">{DEFAULT_EMAIL}</p>
+                        </div>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={handleCopyEmail}
+                          className="h-8 w-8 p-0"
+                        >
+                          {copied === "email" ? (
+                            <Check className="h-4 w-4 text-green-500" />
+                          ) : (
+                            <Copy className="h-4 w-4" />
+                          )}
+                        </Button>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-xs text-muted-foreground">Password:</p>
+                          <p className="text-sm font-mono text-foreground">{DEFAULT_PASSWORD}</p>
+                        </div>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={handleCopyPassword}
+                          className="h-8 w-8 p-0"
+                        >
+                          {copied === "password" ? (
+                            <Check className="h-4 w-4 text-green-500" />
+                          ) : (
+                            <Copy className="h-4 w-4" />
+                          )}
+                        </Button>
+                      </div>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={handleQuickLogin}
+                      className="w-full mt-3 border-yellow-500/30 text-yellow-600 hover:bg-yellow-500/10"
+                    >
+                      Quick Login
+                    </Button>
+                  </CardContent>
+                </Card>
 
                 <div className="flex items-center gap-2">
                   <Checkbox id="remember" />

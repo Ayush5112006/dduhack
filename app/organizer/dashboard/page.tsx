@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { DashboardSidebar } from "@/components/dashboard/sidebar"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -42,9 +42,9 @@ import {
   Megaphone,
   TrendingUp,
 } from "lucide-react"
-import { useSearchParams, useRouter } from "next/navigation"
-import { Suspense } from "react"
-import Loading from "./loading"
+import { useRouter } from "next/navigation"
+import { useToast } from "@/components/toast-provider"
+import type { Hackathon } from "@/lib/data"
 
 const recentParticipants: Array<{
   id: string
@@ -56,27 +56,34 @@ const recentParticipants: Array<{
 
 export default function OrganizerDashboard() {
   const router = useRouter()
-  const searchParams = useSearchParams()
   const [searchQuery, setSearchQuery] = useState("")
-  const [hackathons, setHackathons] = useState<Array<{
-    id: string
-    name: string
-    status: string
-    participants: number
-    submissions: number
-    deadline: string
-  }>>([])
+  const [hackathons, setHackathons] = useState<Hackathon[]>([])
   const [newHackathonName, setNewHackathonName] = useState("")
   const [isDialogOpen, setIsDialogOpen] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
+  const { addToast } = useToast()
 
-  // Calculate dynamic stats
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const response = await fetch("/api/hackathons", { credentials: "include" })
+        if (response.ok) {
+          const data = await response.json()
+          setHackathons(data.hackathons || [])
+        }
+      } catch (error) {
+        console.error("Failed to load hackathons", error)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+    load()
+  }, [])
+
   const totalHackathons = hackathons.length
   const totalParticipants = hackathons.reduce((sum, h) => sum + h.participants, 0)
-  const totalSubmissions = hackathons.reduce((sum, h) => sum + h.submissions, 0)
-  const reviewedPercentage =
-    totalSubmissions > 0
-      ? Math.round((hackathons.filter((h) => h.status === "Completed").reduce((sum, h) => sum + h.submissions, 0) / totalSubmissions) * 100)
-      : 0
+  const totalSubmissions = 0
+  const reviewedPercentage = 0
 
   const stats = [
     { title: "Total Hackathons", value: totalHackathons.toString(), icon: Trophy, change: "+1 this month" },
@@ -85,41 +92,58 @@ export default function OrganizerDashboard() {
     { title: "Page Views", value: "45.2K", icon: Eye, change: "+12% from last month" },
   ]
 
-  // Filter hackathons based on search query
   const filteredHackathons = hackathons.filter((h) =>
-    h.name.toLowerCase().includes(searchQuery.toLowerCase())
+    h.title.toLowerCase().includes(searchQuery.toLowerCase())
   )
 
-  // Handle creating a new hackathon
-  const handleCreateHackathon = () => {
-    if (newHackathonName.trim()) {
-      const newHackathon = {
-        id: (hackathons.length + 1).toString(),
-        name: newHackathonName,
-        status: "Draft",
-        participants: 0,
-        submissions: 0,
-        deadline: "TBD",
+  const handleCreateHackathon = async () => {
+    if (!newHackathonName.trim()) return
+    try {
+      const response = await fetch("/api/hackathons", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          title: newHackathonName,
+          startDate: new Date().toISOString().split("T")[0],
+          endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
+          registrationDeadline: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
+          mode: "Online",
+          category: "Web",
+          prizeAmount: 5000,
+          difficulty: "Intermediate",
+          description: "",
+        }),
+      })
+      if (response.ok) {
+        const data = await response.json()
+        setHackathons([data.hackathon, ...hackathons])
+        setNewHackathonName("")
+        setIsDialogOpen(false)
+        addToast("success", "Hackathon created")
+      } else {
+        const error = await response.json()
+        addToast(error.error || "Failed to create", "error")
       }
-      setHackathons([...hackathons, newHackathon])
-      setNewHackathonName("")
-      setIsDialogOpen(false)
+    } catch (error) {
+      console.error("Create error", error)
+      addToast("error", "Failed to create hackathon")
     }
   }
 
-  // Handle deleting a hackathon
   const handleDeleteHackathon = (id: string) => {
-    setHackathons(hackathons.filter((h) => h.id !== id))
+    if (confirm("Delete this hackathon?")) {
+      setHackathons(hackathons.filter((h) => h.id !== id))
+      addToast("info", "Hackathon deleted locally")
+    }
   }
 
-  // Handle viewing hackathon details
   const handleViewHackathon = (id: string) => {
-    router.push(`/organizer/dashboard/hackathons/${id}`)
+    router.push(`/hackathons/${id}`)
   }
 
-  // Handle editing hackathon
   const handleEditHackathon = (id: string) => {
-    router.push(`/organizer/dashboard/hackathons/${id}/edit`)
+    alert(`Edit ${id} (future feature)`)
   }
 
   // Handle viewing participants
@@ -137,17 +161,20 @@ export default function OrganizerDashboard() {
     alert(`Announcing results for hackathon ${id}`)
   }
 
+  if (isLoading) {
+    return <div className="flex h-screen items-center justify-center">Loading...</div>
+  }
+
   return (
-    <Suspense fallback={<Loading />}>
-      <div className="min-h-screen bg-background">
-        <DashboardSidebar type="organizer" />
-        <main className="ml-64 p-8">
-          <div className="mb-8 flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-foreground">Organizer Dashboard</h1>
-              <p className="mt-2 text-muted-foreground">
-                Manage your hackathons and track performance
-              </p>
+    <div className="min-h-screen bg-background">
+      <DashboardSidebar type="organizer" />
+      <main className="ml-64 p-8">
+        <div className="mb-8 flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-foreground">Organizer Dashboard</h1>
+            <p className="mt-2 text-muted-foreground">
+              Manage your hackathons and track performance
+            </p>
             </div>
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
               <DialogTrigger asChild>
@@ -251,13 +278,13 @@ export default function OrganizerDashboard() {
                     <TableBody>
                       {filteredHackathons.map((hackathon) => (
                         <TableRow key={hackathon.id}>
-                          <TableCell className="font-medium text-foreground">{hackathon.name}</TableCell>
+                          <TableCell className="font-medium text-foreground">{hackathon.title}</TableCell>
                           <TableCell>
                             <Badge
                               variant={
-                                hackathon.status === "Active"
+                                hackathon.status === "live"
                                   ? "default"
-                                  : hackathon.status === "Completed"
+                                  : hackathon.status === "closed"
                                   ? "secondary"
                                   : "outline"
                               }
@@ -269,9 +296,9 @@ export default function OrganizerDashboard() {
                             {hackathon.participants.toLocaleString()}
                           </TableCell>
                           <TableCell className="text-muted-foreground">
-                            {hackathon.submissions.toLocaleString()}
+                            0
                           </TableCell>
-                          <TableCell className="text-muted-foreground">{hackathon.deadline}</TableCell>
+                          <TableCell className="text-muted-foreground">{hackathon.registrationDeadline}</TableCell>
                           <TableCell>
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
@@ -304,7 +331,7 @@ export default function OrganizerDashboard() {
                                 >
                                   <FileText className="h-4 w-4" /> Submissions
                                 </DropdownMenuItem>
-                                {hackathon.status === "Active" && (
+                                {hackathon.status === "live" && (
                                   <DropdownMenuItem 
                                     className="gap-2 text-primary"
                                     onClick={() => handleAnnounceResults(hackathon.id)}
@@ -420,6 +447,5 @@ export default function OrganizerDashboard() {
           </div>
         </main>
       </div>
-    </Suspense>
   )
 }

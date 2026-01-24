@@ -10,6 +10,13 @@ import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Eye, EyeOff, Github, Chrome, ArrowLeft, Copy, Check } from "lucide-react"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 
 const DEFAULT_EMAIL = "demo@example.com"
 const DEFAULT_PASSWORD = "demo123"
@@ -20,6 +27,8 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [copied, setCopied] = useState<"email" | "password" | null>(null)
+  const [userRole, setUserRole] = useState<"participant" | "organizer" | "admin">("participant")
+  const [errorMessage, setErrorMessage] = useState("")
 
   const handleCopyEmail = () => {
     navigator.clipboard.writeText(DEFAULT_EMAIL)
@@ -41,6 +50,7 @@ export default function LoginPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
+    setErrorMessage("")
     
     try {
       const response = await fetch("/api/auth/login", {
@@ -51,20 +61,28 @@ export default function LoginPage() {
           email,
           password,
           userName: email.split("@")[0],
-          userRole: "participant",
+          userRole,
         }),
       })
 
       if (response.ok) {
-        // Redirect to dashboard after successful login
-        window.location.href = "/dashboard"
+        const data = await response.json()
+        const role = data?.user?.userRole || userRole
+        const redirect = role === "admin" 
+          ? "/admin/dashboard" 
+          : role === "organizer" 
+          ? "/organizer/dashboard" 
+          : role === "judge"
+          ? "/judge/dashboard"
+          : "/dashboard"
+        window.location.href = redirect
       } else {
         const error = await response.json()
-        alert(error.error || "Login failed")
+        setErrorMessage(error.error || "Login failed")
       }
     } catch (error) {
       console.error("Login error:", error)
-      alert("Login failed. Please try again.")
+      setErrorMessage("Login failed. Please try again.")
     } finally {
       setIsLoading(false)
     }
@@ -210,6 +228,20 @@ export default function LoginPage() {
                 </div>
 
                 <div className="space-y-2">
+                  <Label htmlFor="role">Sign in as</Label>
+                  <Select value={userRole} onValueChange={(value) => setUserRole(value as any)}>
+                    <SelectTrigger className="bg-secondary">
+                      <SelectValue placeholder="Select your role" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="participant">Participant / Student</SelectItem>
+                      <SelectItem value="organizer">Organizer</SelectItem>
+                      <SelectItem value="admin">Admin</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <Label htmlFor="password">Password</Label>
                     <Link
@@ -301,6 +333,10 @@ export default function LoginPage() {
                     Remember me for 30 days
                   </Label>
                 </div>
+
+                {errorMessage && (
+                  <p className="text-sm text-red-500">{errorMessage}</p>
+                )}
 
                 <Button type="submit" className="w-full" disabled={isLoading}>
                   {isLoading ? "Signing in..." : "Sign in"}

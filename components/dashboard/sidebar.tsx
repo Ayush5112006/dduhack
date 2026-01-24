@@ -1,9 +1,11 @@
 "use client"
 
+import { useEffect, useState } from "react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { useSession } from "@/components/session-provider"
+import { Button } from "@/components/ui/button"
 import {
   LayoutDashboard,
   Trophy,
@@ -14,7 +16,9 @@ import {
   Calendar,
   FileText,
   Award,
+  Menu,
 } from "lucide-react"
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
 
 const participantLinks = [
   { name: "Overview", href: "/dashboard", icon: LayoutDashboard },
@@ -44,12 +48,39 @@ const adminLinks = [
   { name: "Settings", href: "/admin/dashboard/settings", icon: Settings },
 ]
 
-type DashboardType = "participant" | "organizer" | "admin"
+const judgeLinks = [
+  { name: "Overview", href: "/judge/dashboard", icon: LayoutDashboard },
+  { name: "Assigned Hackathons", href: "/judge/hackathons", icon: Trophy },
+  { name: "Submissions", href: "/judge/submissions", icon: FileText },
+  { name: "My Evaluations", href: "/judge/evaluations", icon: Award },
+  { name: "Notifications", href: "/judge/notifications", icon: Bell },
+  { name: "Profile", href: "/judge/profile", icon: User },
+]
+
+type DashboardType = "participant" | "organizer" | "admin" | "judge"
 
 export function DashboardSidebar({ type }: { type: DashboardType }) {
   const pathname = usePathname()
   const router = useRouter()
   const { logout } = useSession()
+  const [userData, setUserData] = useState<any>(null)
+  const [mobileOpen, setMobileOpen] = useState(false)
+
+  // Fetch user data
+  useEffect(() => {
+    async function fetchUserData() {
+      try {
+        const response = await fetch('/api/profile')
+        if (response.ok) {
+          const data = await response.json()
+          setUserData(data)
+        }
+      } catch (error) {
+        console.error('Failed to fetch user data:', error)
+      }
+    }
+    fetchUserData()
+  }, [])
   
   const handleLogout = async () => {
     await logout()
@@ -60,72 +91,150 @@ export function DashboardSidebar({ type }: { type: DashboardType }) {
     ? participantLinks 
     : type === "organizer" 
     ? organizerLinks 
+    : type === "judge"
+    ? judgeLinks
     : adminLinks
 
   const title = type === "participant" 
     ? "Dashboard" 
     : type === "organizer" 
     ? "Organizer" 
+    : type === "judge"
+    ? "Judge"
     : "Admin"
 
-  return (
-    <aside className="fixed left-0 top-0 z-40 h-screen w-64 border-r border-border bg-card">
-      <div className="flex h-full flex-col">
-        <div className="flex h-16 items-center border-b border-border px-6">
-          <Link href="/" className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
-              <span className="text-lg font-bold text-primary-foreground">H</span>
-            </div>
-            <span className="text-xl font-bold text-foreground">HackHub</span>
-          </Link>
-        </div>
+  // Get user initials safely
+  const getUserInitials = () => {
+    const name = userData?.user?.name
+    const email = userData?.user?.email
+    if (name) {
+      return name.charAt(0).toUpperCase()
+    }
+    if (email) {
+      return email.charAt(0).toUpperCase()
+    }
+    return 'U'
+  }
 
-        <div className="flex-1 overflow-y-auto px-4 py-6">
-          <p className="mb-4 px-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            {title}
-          </p>
-          <nav className="space-y-1">
-            {links.map((link) => {
-              const isActive = pathname === link.href
-              return (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  className={cn(
-                    "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
-                    isActive
-                      ? "bg-primary/10 text-primary"
-                      : "text-muted-foreground hover:bg-secondary hover:text-foreground"
-                  )}
-                >
-                  <link.icon className="h-4 w-4" />
-                  {link.name}
-                </Link>
-              )
-            })}
-          </nav>
-        </div>
-
-        <div className="border-t border-border p-4">
-          <div className="flex items-center gap-3 rounded-lg px-3 py-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-sm font-medium text-primary">
-              JD
-            </div>
-            <div className="flex-1 truncate">
-              <p className="text-sm font-medium text-foreground">John Doe</p>
-              <p className="truncate text-xs text-muted-foreground">john@example.com</p>
-            </div>
-          </div>
-          <button
-            type="button"
-            onClick={handleLogout}
-            className="mt-2 flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+  const NavLinks = () => (
+    <nav className="space-y-1">
+      {links.map((link) => {
+        const isActive = pathname === link.href
+        return (
+          <Link
+            key={link.href}
+            href={link.href}
+            className={cn(
+              "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+              isActive
+                ? "bg-primary/10 text-primary"
+                : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+            )}
+            onClick={() => setMobileOpen(false)}
           >
-            <LogOut className="h-4 w-4" />
-            Sign out
-          </button>
-        </div>
+            <link.icon className="h-4 w-4" />
+            {link.name}
+          </Link>
+        )
+      })}
+    </nav>
+  )
+
+  const UserBlock = () => (
+    <div className="flex items-center gap-3 rounded-lg px-3 py-2">
+      <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-sm font-medium text-primary overflow-hidden">
+        {userData?.profile?.avatar ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={userData.profile.avatar} alt={userData?.user?.name || 'avatar'} className="h-full w-full object-cover" />
+        ) : (
+          getUserInitials()
+        )}
       </div>
-    </aside>
+      <div className="flex-1 truncate">
+        <p className="text-sm font-medium text-foreground">{userData?.user?.name || 'User'}</p>
+        <p className="truncate text-xs text-muted-foreground">{userData?.user?.email || ''}</p>
+      </div>
+    </div>
+  )
+
+  return (
+    <>
+      {/* Mobile header with menu toggle */}
+      <div className="flex items-center justify-between border-b border-border bg-card px-4 py-3 lg:hidden">
+        <Link href="/" className="flex items-center gap-2">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
+            <span className="text-lg font-bold text-primary-foreground">H</span>
+          </div>
+          <span className="text-lg font-bold text-foreground">HackHub</span>
+        </Link>
+        <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
+          <SheetTrigger asChild>
+            <Button variant="outline" size="icon" aria-label="Open menu">
+              <Menu className="h-5 w-5" />
+            </Button>
+          </SheetTrigger>
+          <SheetContent side="left" className="w-72 p-0">
+            <div className="border-b border-border px-6 py-4">
+              <SheetHeader>
+                <SheetTitle className="flex items-center gap-2 text-lg font-semibold">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">H</div>
+                  {title}
+                </SheetTitle>
+              </SheetHeader>
+            </div>
+            <div className="h-full overflow-y-auto px-4 py-5 space-y-6">
+              <div>
+                <p className="mb-3 px-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Navigation</p>
+                <NavLinks />
+              </div>
+              <div className="border-t border-border pt-4 space-y-2">
+                <UserBlock />
+                <Button
+                  variant="ghost"
+                  className="w-full justify-start gap-3"
+                  onClick={handleLogout}
+                >
+                  <LogOut className="h-4 w-4" />
+                  Sign out
+                </Button>
+              </div>
+            </div>
+          </SheetContent>
+        </Sheet>
+      </div>
+
+      {/* Desktop sidebar */}
+      <aside className="fixed left-0 top-0 z-40 hidden h-screen w-64 border-r border-border bg-card lg:block">
+        <div className="flex h-full flex-col">
+          <div className="flex h-16 items-center border-b border-border px-6">
+            <Link href="/" className="flex items-center gap-2">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
+                <span className="text-lg font-bold text-primary-foreground">H</span>
+              </div>
+              <span className="text-xl font-bold text-foreground">HackHub</span>
+            </Link>
+          </div>
+
+          <div className="flex-1 overflow-y-auto px-4 py-6">
+            <p className="mb-4 px-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              {title}
+            </p>
+            <NavLinks />
+          </div>
+
+          <div className="border-t border-border p-4 space-y-2">
+            <UserBlock />
+            <button
+              type="button"
+              onClick={handleLogout}
+              className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+            >
+              <LogOut className="h-4 w-4" />
+              Sign out
+            </button>
+          </div>
+        </div>
+      </aside>
+    </>
   )
 }

@@ -29,15 +29,51 @@ export default function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [password, setPassword] = useState("")
   const [isLoading, setIsLoading] = useState(false)
+  const [role, setRole] = useState("participant")
+  const [firstName, setFirstName] = useState("")
+  const [lastName, setLastName] = useState("")
+  const [email, setEmail] = useState("")
+  const [errorMessage, setErrorMessage] = useState("")
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
-    // Simulate registration
-    await new Promise((resolve) => setTimeout(resolve, 1000))
-    setIsLoading(false)
-    // Redirect to dashboard after successful registration
-    window.location.href = "/dashboard"
+    setErrorMessage("")
+
+    try {
+      const response = await fetch("/api/auth/signup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          email,
+          password,
+          userName: `${firstName} ${lastName}`.trim() || email.split("@")[0],
+          userRole: role,
+        }),
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        const userRole = data?.user?.userRole || role
+        const redirect = userRole === "admin" 
+          ? "/admin/dashboard" 
+          : userRole === "organizer" 
+          ? "/organizer/dashboard" 
+          : userRole === "judge"
+          ? "/judge/dashboard"
+          : "/dashboard"
+        window.location.href = redirect
+      } else {
+        const error = await response.json()
+        setErrorMessage(error.error || "Signup failed")
+      }
+    } catch (error) {
+      console.error("Signup error:", error)
+      setErrorMessage("Signup failed. Please try again.")
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   const handleGoogleSignup = async () => {
@@ -191,6 +227,8 @@ export default function RegisterPage() {
                     <Input
                       id="firstName"
                       placeholder="John"
+                      value={firstName}
+                      onChange={(e) => setFirstName(e.target.value)}
                       required
                       className="bg-secondary"
                     />
@@ -200,6 +238,8 @@ export default function RegisterPage() {
                     <Input
                       id="lastName"
                       placeholder="Doe"
+                      value={lastName}
+                      onChange={(e) => setLastName(e.target.value)}
                       required
                       className="bg-secondary"
                     />
@@ -212,6 +252,8 @@ export default function RegisterPage() {
                     id="email"
                     type="email"
                     placeholder="name@example.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
                     required
                     className="bg-secondary"
                   />
@@ -219,15 +261,15 @@ export default function RegisterPage() {
 
                 <div className="space-y-2">
                   <Label htmlFor="role">I am a</Label>
-                  <Select>
+                  <Select value={role} onValueChange={setRole}>
                     <SelectTrigger className="bg-secondary">
                       <SelectValue placeholder="Select your role" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="participant">Participant / Developer</SelectItem>
                       <SelectItem value="organizer">Hackathon Organizer</SelectItem>
-                      <SelectItem value="mentor">Mentor / Judge</SelectItem>
-                      <SelectItem value="sponsor">Sponsor</SelectItem>
+                      <SelectItem value="judge">Judge / Evaluator</SelectItem>
+                      <SelectItem value="admin">Admin (Superuser)</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -281,6 +323,10 @@ export default function RegisterPage() {
                     </Link>
                   </Label>
                 </div>
+
+                {errorMessage && (
+                  <p className="text-sm text-red-500">{errorMessage}</p>
+                )}
 
                 <Button type="submit" className="w-full" disabled={isLoading}>
                   {isLoading ? "Creating account..." : "Create account"}

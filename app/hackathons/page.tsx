@@ -31,17 +31,15 @@ import {
   Search,
   SlidersHorizontal,
   Calendar,
-  MapPin,
   Trophy,
   Users,
   X,
 } from "lucide-react"
-import { useSearchParams } from "next/navigation"
-import { Suspense } from "react"
 
 const modes = ["Online", "Offline", "Hybrid"]
 const difficulties = ["Beginner", "Intermediate", "Advanced"]
 const categories = ["AI", "Blockchain", "Web", "Mobile", "Security", "IoT"]
+const statusFilters = ["all", "upcoming", "live", "closed", "past"] as const
 
 function FilterSidebar({
   selectedModes,
@@ -52,6 +50,8 @@ function FilterSidebar({
   setPrizeRange,
   isFreeOnly,
   setIsFreeOnly,
+  selectedCategory,
+  setSelectedCategory,
 }: {
   selectedModes: string[]
   setSelectedModes: (modes: string[]) => void
@@ -61,6 +61,8 @@ function FilterSidebar({
   setPrizeRange: (range: number[]) => void
   isFreeOnly: boolean
   setIsFreeOnly: (free: boolean) => void
+  selectedCategory: string | null
+  setSelectedCategory: (category: string | null) => void
 }) {
   const toggleMode = (mode: string) => {
     setSelectedModes(
@@ -121,13 +123,14 @@ function FilterSidebar({
         <Slider
           value={prizeRange}
           onValueChange={setPrizeRange}
-          max={100000}
-          step={5000}
+          max={50000}
+          min={0}
+          step={2500}
           className="mb-2"
         />
         <div className="flex justify-between text-sm text-muted-foreground">
           <span>${prizeRange[0].toLocaleString()}</span>
-          <span>${prizeRange[1]?.toLocaleString() || "100,000"}+</span>
+          <span>${(prizeRange[1] ?? 50000).toLocaleString()}+</span>
         </div>
       </div>
 
@@ -152,7 +155,14 @@ function FilterSidebar({
             <Badge
               key={category}
               variant="outline"
-              className="cursor-pointer transition-colors hover:bg-primary hover:text-primary-foreground"
+              onClick={() =>
+                setSelectedCategory(selectedCategory === category ? null : category)
+              }
+              className={`cursor-pointer transition-colors ${
+                selectedCategory === category
+                  ? "bg-primary text-primary-foreground"
+                  : "hover:bg-primary hover:text-primary-foreground"
+              }`}
             >
               {category}
             </Badge>
@@ -172,8 +182,11 @@ export default function HackathonsPage() {
   const [sortBy, setSortBy] = useState("newest")
   const [selectedModes, setSelectedModes] = useState<string[]>([])
   const [selectedDifficulties, setSelectedDifficulties] = useState<string[]>([])
-  const [prizeRange, setPrizeRange] = useState([0])
+  const [prizeRange, setPrizeRange] = useState([0, 50000])
   const [isFreeOnly, setIsFreeOnly] = useState(false)
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
+  const [statusFilter, setStatusFilter] = useState<(typeof statusFilters)[number]>("all")
+  const [locationQuery, setLocationQuery] = useState("")
 
   const filteredHackathons = hackathons.filter((h) => {
     const matchesSearch = h.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -181,14 +194,25 @@ export default function HackathonsPage() {
     const matchesMode = selectedModes.length === 0 || selectedModes.includes(h.mode)
     const matchesDifficulty = selectedDifficulties.length === 0 || selectedDifficulties.includes(h.difficulty)
     const matchesFree = !isFreeOnly || h.isFree
-    return matchesSearch && matchesMode && matchesDifficulty && matchesFree
+    const matchesCategory = !selectedCategory || h.category === selectedCategory || h.tags.includes(selectedCategory)
+    const matchesStatus = statusFilter === "all" || h.status === statusFilter
+    const matchesLocation = !locationQuery || h.location.toLowerCase().includes(locationQuery.toLowerCase())
+    const withinPrize = prizeRange.length === 2 ? (h.prizeAmount >= prizeRange[0] && h.prizeAmount <= prizeRange[1]) : true
+    return matchesSearch && matchesMode && matchesDifficulty && matchesFree && matchesCategory && matchesStatus && matchesLocation && withinPrize
   })
 
   const sortedHackathons = [...filteredHackathons].sort((a, b) => {
     if (sortBy === "prize") {
-      return parseInt(b.prize.replace(/[^0-9]/g, "")) - parseInt(a.prize.replace(/[^0-9]/g, ""))
+      return b.prizeAmount - a.prizeAmount
     }
-    return 0
+    if (sortBy === "closing") {
+      return new Date(a.registrationDeadline).getTime() - new Date(b.registrationDeadline).getTime()
+    }
+    if (sortBy === "participants") {
+      return b.participants - a.participants
+    }
+    // newest by start date
+    return new Date(b.startDate).getTime() - new Date(a.startDate).getTime()
   })
 
   return (
@@ -203,14 +227,23 @@ export default function HackathonsPage() {
         </div>
 
         <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="relative flex-1 sm:max-w-md">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <div className="flex flex-1 flex-col gap-3 sm:flex-row sm:items-center sm:gap-3">
+            <div className="relative flex-1 min-w-[240px]">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                type="search"
+                placeholder="Search hackathons..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="bg-secondary pl-10"
+              />
+            </div>
             <Input
               type="search"
-              placeholder="Search hackathons..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="bg-secondary pl-10"
+              placeholder="Filter by city / country"
+              value={locationQuery}
+              onChange={(e) => setLocationQuery(e.target.value)}
+              className="bg-secondary"
             />
           </div>
           <div className="flex gap-3">
@@ -235,6 +268,8 @@ export default function HackathonsPage() {
                     setPrizeRange={setPrizeRange}
                     isFreeOnly={isFreeOnly}
                     setIsFreeOnly={setIsFreeOnly}
+                    selectedCategory={selectedCategory}
+                    setSelectedCategory={setSelectedCategory}
                   />
                 </div>
               </SheetContent>
@@ -253,7 +288,21 @@ export default function HackathonsPage() {
           </div>
         </div>
 
-        {(selectedModes.length > 0 || selectedDifficulties.length > 0 || isFreeOnly) && (
+        <div className="mb-4 flex flex-wrap gap-2">
+          {statusFilters.map((status) => (
+            <Button
+              key={status}
+              size="sm"
+              variant={statusFilter === status ? "default" : "outline"}
+              onClick={() => setStatusFilter(status)}
+              className="capitalize"
+            >
+              {status === "all" ? "All" : status}
+            </Button>
+          ))}
+        </div>
+
+        {(selectedModes.length > 0 || selectedDifficulties.length > 0 || isFreeOnly || selectedCategory || statusFilter !== "all" || locationQuery) && (
           <div className="mb-6 flex flex-wrap items-center gap-2">
             <span className="text-sm text-muted-foreground">Active filters:</span>
             {selectedModes.map((mode) => (
@@ -282,6 +331,19 @@ export default function HackathonsPage() {
                 </button>
               </Badge>
             ))}
+            {selectedCategory && (
+              <Badge variant="secondary" className="gap-1">
+                {selectedCategory}
+                <button
+                  type="button"
+                  onClick={() => setSelectedCategory(null)}
+                  className="ml-1"
+                  aria-label="Remove category filter"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </Badge>
+            )}
             {isFreeOnly && (
               <Badge variant="secondary" className="gap-1">
                 Free Only
@@ -295,6 +357,32 @@ export default function HackathonsPage() {
                 </button>
               </Badge>
             )}
+            {statusFilter !== "all" && (
+              <Badge variant="secondary" className="gap-1 capitalize">
+                {statusFilter}
+                <button
+                  type="button"
+                  onClick={() => setStatusFilter("all")}
+                  className="ml-1"
+                  aria-label="Remove status filter"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </Badge>
+            )}
+            {locationQuery && (
+              <Badge variant="secondary" className="gap-1">
+                {locationQuery}
+                <button
+                  type="button"
+                  onClick={() => setLocationQuery("")}
+                  className="ml-1"
+                  aria-label="Clear location filter"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </Badge>
+            )}
             <Button
               variant="ghost"
               size="sm"
@@ -302,6 +390,9 @@ export default function HackathonsPage() {
                 setSelectedModes([])
                 setSelectedDifficulties([])
                 setIsFreeOnly(false)
+                setSelectedCategory(null)
+                setStatusFilter("all")
+                setLocationQuery("")
               }}
               className="text-xs"
             >
@@ -323,6 +414,8 @@ export default function HackathonsPage() {
                 setPrizeRange={setPrizeRange}
                 isFreeOnly={isFreeOnly}
                 setIsFreeOnly={setIsFreeOnly}
+                selectedCategory={selectedCategory}
+                setSelectedCategory={setSelectedCategory}
               />
             </div>
           </aside>

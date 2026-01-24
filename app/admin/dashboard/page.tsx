@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { DashboardSidebar } from "@/components/dashboard/sidebar"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -35,7 +35,7 @@ import {
   Ban,
   Eye,
 } from "lucide-react"
-import { useSearchParams } from "next/navigation"
+import type { User, Hackathon } from "@/lib/data"
 
 function LoadingComponent() {
   return <div>Loading...</div>
@@ -109,17 +109,63 @@ const analyticsData: Array<{
 
 export default function AdminDashboard() {
   const [searchQuery, setSearchQuery] = useState("")
-  const searchParams = useSearchParams()
   const [approvals, setApprovals] = useState(pendingApprovals)
-  const [usersList, setUsersList] = useState<typeof users>(users)
+  const [usersList, setUsersList] = useState<User[]>([])
   const [reportsList, setReportsList] = useState<typeof reports>(reports)
+  const [hackathons, setHackathons] = useState<Hackathon[]>([])
+  const [isLoading, setIsLoading] = useState(true)
 
-  const handleApproveItem = (id: string) => {
-    if (confirm("Approve this item?")) {
-      setApprovals(approvals.map(item => 
-        item.id === id ? { ...item, status: "Approved" } : item
-      ))
-      alert("Item approved successfully!")
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const [usersRes, hackathonsRes] = await Promise.all([
+          fetch("/api/admin/users", { credentials: "include" }),
+          fetch("/api/hackathons", { credentials: "include" }),
+        ])
+        if (usersRes.ok) {
+          const data = await usersRes.json()
+          setUsersList(data.users || [])
+        }
+        if (hackathonsRes.ok) {
+          const data = await hackathonsRes.json()
+          setHackathons(data.hackathons || [])
+        }
+      } catch (error) {
+        console.error("Failed to load admin data", error)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+    load()
+  }, [])
+
+  const handleApproveItem = async (id: string) => {
+    const item = approvals.find(a => a.id === id)
+    if (!item || !confirm("Approve this item?")) return
+    
+    try {
+      if (item.type === "Organizer") {
+        const user = usersList.find(u => u.email === item.submittedBy)
+        if (!user) return alert("User not found")
+        
+        const response = await fetch(`/api/admin/organizers/${user.id}/approve`, {
+          method: "POST",
+          credentials: "include",
+        })
+        if (response.ok) {
+          setApprovals(approvals.map(a => a.id === id ? { ...a, status: "Approved" } : a))
+          setUsersList(usersList.map(u => u.id === user.id ? { ...u, role: "organizer", status: "active" } : u))
+          alert("Organizer approved!")
+        } else {
+          alert("Failed to approve")
+        }
+      } else {
+        setApprovals(approvals.map(a => a.id === id ? { ...a, status: "Approved" } : a))
+        alert("Hackathon approved (API pending)")
+      }
+    } catch (error) {
+      console.error("Approve error", error)
+      alert("Failed to approve")
     }
   }
 
@@ -134,21 +180,45 @@ export default function AdminDashboard() {
     alert(`Viewing item ${id}`)
   }
 
-  const handleSuspendUser = (id: string) => {
-    if (confirm("Suspend this user?")) {
-      setUsersList(usersList.map(user => 
-        user.id === id ? { ...user, status: "Suspended" } : user
-      ))
-      alert("User suspended")
+  const handleSuspendUser = async (id: string) => {
+    if (!confirm("Suspend this user?")) return
+    try {
+      const response = await fetch(`/api/admin/users/${id}/status`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ status: "suspended" }),
+      })
+      if (response.ok) {
+        setUsersList(usersList.map(u => u.id === id ? { ...u, status: "suspended" } : u))
+        alert("User suspended")
+      } else {
+        alert("Failed to suspend")
+      }
+    } catch (error) {
+      console.error("Suspend error", error)
+      alert("Failed to suspend user")
     }
   }
 
-  const handleReactivateUser = (id: string) => {
-    if (confirm("Reactivate this user?")) {
-      setUsersList(usersList.map(user => 
-        user.id === id ? { ...user, status: "Active" } : user
-      ))
-      alert("User reactivated")
+  const handleReactivateUser = async (id: string) => {
+    if (!confirm("Reactivate this user?")) return
+    try {
+      const response = await fetch(`/api/admin/users/${id}/status`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ status: "active" }),
+      })
+      if (response.ok) {
+        setUsersList(usersList.map(u => u.id === id ? { ...u, status: "active" } : u))
+        alert("User reactivated")
+      } else {
+        alert("Failed to reactivate")
+      }
+    } catch (error) {
+      console.error("Reactivate error", error)
+      alert("Failed to reactivate user")
     }
   }
 
@@ -174,6 +244,10 @@ export default function AdminDashboard() {
       setReportsList(reportsList.filter(report => report.id !== id))
       alert("Report dismissed")
     }
+  }
+
+  if (isLoading) {
+    return <div className="flex h-screen items-center justify-center">Loading...</div>
   }
 
   return (
@@ -330,19 +404,19 @@ export default function AdminDashboard() {
                           <TableCell>
                             <Badge
                               variant={
-                                user.status === "Active"
+                                user.status === "active"
                                   ? "default"
-                                  : user.status === "Suspended"
+                                  : user.status === "suspended"
                                   ? "destructive"
                                   : "secondary"
                               }
-                              className={user.status === "Active" ? "bg-green-500/10 text-green-500" : ""}
+                              className={user.status === "active" ? "bg-green-500/10 text-green-500" : ""}
                             >
                               {user.status}
                             </Badge>
                           </TableCell>
-                          <TableCell className="text-muted-foreground">{user.email}</TableCell>
-                          <TableCell className="text-muted-foreground">{user.role}</TableCell>
+                          <TableCell className="text-muted-foreground">-</TableCell>
+                          <TableCell className="text-muted-foreground">-</TableCell>
                           <TableCell>
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
@@ -363,7 +437,7 @@ export default function AdminDashboard() {
                                 >
                                   <Activity className="h-4 w-4" /> Activity Log
                                 </DropdownMenuItem>
-                                {user.status === "Active" && (
+                                {user.status === "active" && (
                                   <DropdownMenuItem 
                                     className="gap-2 text-destructive"
                                     onClick={() => handleSuspendUser(user.id)}
@@ -371,7 +445,7 @@ export default function AdminDashboard() {
                                     <Ban className="h-4 w-4" /> Suspend User
                                   </DropdownMenuItem>
                                 )}
-                                {user.status === "Suspended" && (
+                                {user.status === "suspended" && (
                                   <DropdownMenuItem 
                                     className="gap-2 text-green-500"
                                     onClick={() => handleReactivateUser(user.id)}

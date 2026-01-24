@@ -1,38 +1,44 @@
 import { NextRequest, NextResponse } from "next/server"
-import { getSession } from "@/lib/session"
 
-const protectedRoutes = [
-  "/dashboard",
-  "/organizer/dashboard",
-  "/admin/dashboard",
-]
+const SESSION_COOKIE_NAME = "hackathon_session"
+const PROTECTED_PREFIXES = ["/dashboard", "/organizer", "/admin"]
 
-export async function middleware(request: NextRequest) {
+function parseSession(request: NextRequest) {
+  const cookie = request.cookies.get(SESSION_COOKIE_NAME)?.value
+  if (!cookie) return null
+  try {
+    const session = JSON.parse(cookie)
+    if (!session?.token || !session?.expiresAt) return null
+    if (Date.now() > session.expiresAt) return null
+    return session
+  } catch (error) {
+    // If cookie is legacy raw string token, we cannot determine role; deny access
+    return null
+  }
+}
+
+export function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname
+  const isProtected = PROTECTED_PREFIXES.some((prefix) => pathname.startsWith(prefix))
 
-  // Check if the route needs protection
-  const isProtectedRoute = protectedRoutes.some((route) =>
-    pathname.startsWith(route)
-  )
+  if (!isProtected) {
+    return NextResponse.next()
+  }
 
-  if (isProtectedRoute) {
-    const session = await getSession()
+  const session = parseSession(request)
 
-    if (!session) {
-      return NextResponse.redirect(new URL("/auth/login", request.url))
-    }
+  if (!session) {
+    return NextResponse.redirect(new URL("/auth/login", request.url))
+  }
 
-    // Check role-based access
-    if (pathname.startsWith("/admin/dashboard") && session.userRole !== "admin") {
-      return NextResponse.redirect(new URL("/", request.url))
-    }
+  const role = session.userRole
 
-    if (
-      pathname.startsWith("/organizer/dashboard") &&
-      session.userRole !== "organizer"
-    ) {
-      return NextResponse.redirect(new URL("/", request.url))
-    }
+  if (pathname.startsWith("/admin") && role !== "admin") {
+    return NextResponse.redirect(new URL("/", request.url))
+  }
+
+  if (pathname.startsWith("/organizer") && role !== "organizer") {
+    return NextResponse.redirect(new URL("/", request.url))
   }
 
   return NextResponse.next()

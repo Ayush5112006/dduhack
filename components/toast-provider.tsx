@@ -12,7 +12,7 @@ interface Toast {
 
 interface ToastContextType {
   toasts: Toast[]
-  addToast: (message: string, type: "success" | "error" | "info", duration?: number) => void
+  addToast: (type: "success" | "error" | "info", message: string, duration?: number) => void
   removeToast: (id: string) => void
 }
 
@@ -21,7 +21,7 @@ export const ToastContext = React.createContext<ToastContextType | undefined>(un
 export function ToastProvider({ children }: { children: React.ReactNode }) {
   const [toasts, setToasts] = useState<Toast[]>([])
 
-  const addToast = useCallback((message: string, type: "success" | "error" | "info" = "info", duration = 3000) => {
+  const addToast = useCallback((type: "success" | "error" | "info", message: string, duration = 3000) => {
     const id = Date.now().toString()
     setToasts((prev) => [...prev, { id, message, type, duration }])
 

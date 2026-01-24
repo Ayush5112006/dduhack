@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import { DashboardSidebar } from "@/components/dashboard/sidebar"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -18,32 +18,53 @@ import {
 import { Trophy, FileText, Award, Bell, Calendar, ArrowRight, ExternalLink, Trash2, Edit, Search } from "lucide-react"
 import { useToast } from "@/components/toast-provider"
 
-const mockStats = [
-  { title: "Active Hackathons", value: "3", change: "+1 this month", icon: Trophy },
-  { title: "Submissions", value: "5", change: "+2 pending review", icon: FileText },
-  { title: "Wins", value: "2", change: "Last win 2 weeks ago", icon: Award },
-  { title: "Notifications", value: "4", change: "2 unread", icon: Bell },
-]
-
-const mockMyHackathons = [
-  { id: "1", name: "Web3 Hackathon 2026", role: "Full Stack Developer", status: "In Progress", deadline: "Jan 30, 2026", submission: "Not submitted" },
-  { id: "2", name: "AI Challenge 2026", role: "ML Engineer", status: "In Progress", deadline: "Feb 5, 2026", submission: "Submitted" },
-  { id: "3", name: "Climate Tech Hack", role: "Backend Developer", status: "Completed", deadline: "Jan 15, 2026", submission: "Submitted" },
-]
-
-const mockNotifications = [
-  { id: "1", title: "Submission Received", message: "Your AI Challenge submission has been received", time: "2 hours ago", unread: true },
-  { id: "2", title: "Results Announced", message: "Winners of Climate Tech Hack announced", time: "5 hours ago", unread: true },
-  { id: "3", title: "New Hackathon", message: "Blockchain Hack 2026 is now open for registration", time: "1 day ago", unread: false },
-  { id: "4", title: "Reminder", message: "Your Web3 Hackathon submission deadline is approaching", time: "2 days ago", unread: false },
-]
-
 export default function ParticipantDashboard() {
-  const [myHackathons, setMyHackathons] = useState(mockMyHackathons)
-  const [notifications, setNotifications] = useState(mockNotifications)
-  const [stats] = useState(mockStats)
+  const [myHackathons, setMyHackathons] = useState<any[]>([])
+  const [notifications, setNotifications] = useState<any[]>([])
+  const [stats, setStats] = useState<any[]>([])
+  const [userData, setUserData] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState("")
   const { addToast } = useToast()
+
+  // Fetch dashboard data from API
+  useEffect(() => {
+    async function fetchDashboardData() {
+      try {
+        const response = await fetch('/api/dashboard')
+        if (!response.ok) {
+          if (response.status === 401) {
+            window.location.href = '/auth/login'
+            return
+          }
+          throw new Error('Failed to fetch dashboard data')
+        }
+        
+        const data = await response.json()
+        
+        // Set user data
+        setUserData(data.user)
+        
+        // Set stats
+        setStats([
+          { title: "Active Hackathons", value: String(data.stats.activeHackathons), change: "Currently registered", icon: Trophy },
+          { title: "Submissions", value: String(data.stats.totalSubmissions), change: "Total submitted", icon: FileText },
+          { title: "Wins", value: String(data.stats.wins), change: "Certificates earned", icon: Award },
+          { title: "Notifications", value: String(data.notifications.length), change: `${data.stats.unreadNotifications} unread`, icon: Bell },
+        ])
+        
+        setMyHackathons(data.myHackathons || [])
+        setNotifications(data.notifications || [])
+      } catch (error) {
+        console.error('Error fetching dashboard data:', error)
+        addToast('error', 'Failed to load dashboard data')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchDashboardData()
+  }, [addToast])
 
   const filteredHackathons = myHackathons.filter(h =>
     h.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -53,7 +74,7 @@ export default function ParticipantDashboard() {
   const handleDeleteHackathon = (id: string) => {
     if (confirm("Are you sure you want to delete this hackathon from your list?")) {
       setMyHackathons(myHackathons.filter(h => h.id !== id))
-      addToast("Hackathon removed successfully!", "success")
+      addToast("success", "Hackathon removed successfully!")
     }
   }
 
@@ -66,7 +87,7 @@ export default function ParticipantDashboard() {
       setMyHackathons(myHackathons.map(h => 
         h.id === id ? { ...h, role: newRole } : h
       ))
-      addToast("Role updated successfully!", "success")
+      addToast("success", "Role updated successfully!")
     }
   }
 
@@ -75,26 +96,26 @@ export default function ParticipantDashboard() {
     if (!hackathon) return
     
     if (hackathon.submission === "Submitted") {
-      addToast("You have already submitted for this hackathon!", "info")
+      addToast("info", "You have already submitted for this hackathon!")
       return
     }
 
     const projectUrl = prompt("Enter your project submission URL (GitHub link):")
     if (projectUrl) {
       if (!projectUrl.includes("github.com")) {
-        addToast("Please enter a valid GitHub URL!", "error")
+        addToast("error", "Please enter a valid GitHub URL!")
         return
       }
       setMyHackathons(myHackathons.map(h => 
         h.id === id ? { ...h, submission: "Submitted" } : h
       ))
-      addToast("Project submitted successfully!", "success")
+      addToast("success", "Project submitted successfully!")
     }
   }
 
   const handleClearNotification = (id: string) => {
     setNotifications(notifications.filter(n => n.id !== id))
-    addToast("Notification removed", "info")
+    addToast("info", "Notification removed")
   }
 
   const handleMarkAsRead = (id: string) => {
@@ -103,14 +124,56 @@ export default function ParticipantDashboard() {
     ))
   }
 
-  const unreadCount = notifications.filter(n => n.unread).length
+  const unreadCount = notifications.filter(n => !n.read).length
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+          <p className="mt-4 text-muted-foreground">Loading dashboard...</p>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-background">
       <DashboardSidebar type="participant" />
-      <main className="ml-64 p-8">
+      <main className="px-4 py-6 lg:ml-64 lg:p-8 max-w-6xl mx-auto">
+        {/* User Profile Card */}
+        {userData && (
+          <Card className="mb-8 border-border bg-card">
+            <CardContent className="p-6">
+              <div className="flex items-center gap-4">
+                <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center text-2xl font-bold text-primary overflow-hidden">
+                  {userData.profile?.avatar ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={userData.profile.avatar} alt={userData.name || 'avatar'} className="h-full w-full object-cover" />
+                  ) : (
+                    (userData.name || userData.email).charAt(0).toUpperCase()
+                  )}
+                </div>
+                <div className="flex-1">
+                  <h2 className="text-2xl font-bold text-foreground">{userData.name || 'User'}</h2>
+                  <p className="text-muted-foreground">{userData.email}</p>
+                  {userData.profile && (
+                    <div className="mt-2 flex flex-wrap gap-4 text-sm text-muted-foreground">
+                      {userData.profile.institution && <span>🎓 {userData.profile.institution}</span>}
+                      {userData.profile.location && <span>📍 {userData.profile.location}</span>}
+                    </div>
+                  )}
+                </div>
+                <Badge variant={userData.status === 'active' ? 'default' : 'secondary'}>
+                  {userData.role}
+                </Badge>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-foreground">Welcome back, John!</h1>
+          <h1 className="text-3xl font-bold text-foreground">Welcome back{userData?.name ? `, ${userData.name}` : ''}!</h1>
           <p className="mt-2 text-muted-foreground">
             Here&apos;s an overview of your hackathon activity
           </p>
@@ -177,15 +240,15 @@ export default function ParticipantDashboard() {
                           <TableCell>
                             <div>
                               <p className="font-medium text-foreground">{hackathon.name}</p>
-                              <p className="text-xs text-muted-foreground">{hackathon.role}</p>
+                              <p className="text-xs text-muted-foreground">{hackathon.mode || 'Individual'}</p>
                             </div>
                           </TableCell>
                           <TableCell>
                             <Badge
                               variant={
-                                hackathon.status === "In Progress"
+                                hackathon.status === "live"
                                   ? "default"
-                                  : hackathon.status === "Completed"
+                                  : hackathon.status === "past"
                                   ? "secondary"
                                   : "outline"
                               }
@@ -193,52 +256,42 @@ export default function ParticipantDashboard() {
                               {hackathon.status}
                             </Badge>
                           </TableCell>
-                          <TableCell className="text-muted-foreground">{hackathon.deadline}</TableCell>
+                          <TableCell className="text-muted-foreground">
+                            {new Date(hackathon.deadline).toLocaleDateString()}
+                          </TableCell>
                           <TableCell>
                             <Badge
                               variant={
-                                hackathon.submission === "Submitted"
+                                hackathon.submission
                                   ? "default"
-                                  : hackathon.submission === "Not submitted"
-                                  ? "destructive"
-                                  : "outline"
+                                  : "destructive"
                               }
-                              className={hackathon.submission === "Submitted" ? "bg-green-500/10 text-green-500" : ""}
+                              className={hackathon.submission ? "bg-green-500/10 text-green-500" : ""}
                             >
-                              {hackathon.submission}
+                              {hackathon.submission ? hackathon.submission.status : "Not submitted"}
                             </Badge>
                           </TableCell>
                           <TableCell>
                             <div className="flex gap-1">
-                              <Button 
-                                variant="ghost" 
-                                size="sm"
-                                onClick={() => handleSubmitProject(hackathon.id)}
-                                title="Submit Project"
-                              >
-                                <FileText className="h-4 w-4" />
-                              </Button>
-                              <Button 
-                                variant="ghost" 
-                                size="sm"
-                                onClick={() => handleEditHackathon(hackathon.id)}
-                                title="Edit Role"
-                              >
-                                <Edit className="h-4 w-4" />
-                              </Button>
-                              <Button 
-                                variant="ghost" 
-                                size="sm"
-                                onClick={() => handleDeleteHackathon(hackathon.id)}
-                                title="Delete"
-                              >
-                                <Trash2 className="h-4 w-4 text-red-500" />
-                              </Button>
                               <Link href={`/hackathons/${hackathon.id}`}>
-                                <Button variant="ghost" size="sm">
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm"
+                                  title="View Details"
+                                >
                                   <ExternalLink className="h-4 w-4" />
                                 </Button>
                               </Link>
+                              {!hackathon.submission && (
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm"
+                                  onClick={() => handleSubmitProject(hackathon.id)}
+                                  title="Submit Project"
+                                >
+                                  <FileText className="h-4 w-4" />
+                                </Button>
+                              )}
                             </div>
                           </TableCell>
                         </TableRow>
@@ -271,7 +324,7 @@ export default function ParticipantDashboard() {
                       <div
                         key={notification.id}
                         className={`rounded-lg border border-border p-4 ${
-                          notification.unread ? "bg-primary/5" : "bg-transparent"
+                          !notification.read ? "bg-primary/5" : "bg-transparent"
                         }`}
                       >
                         <div className="flex items-start justify-between">
@@ -279,7 +332,7 @@ export default function ParticipantDashboard() {
                             {notification.title}
                           </h4>
                           <div className="flex gap-1">
-                            {notification.unread && (
+                            {!notification.read && (
                               <Button 
                                 size="sm" 
                                 variant="ghost"
@@ -302,7 +355,9 @@ export default function ParticipantDashboard() {
                         <p className="mt-1 text-xs text-muted-foreground">
                           {notification.message}
                         </p>
-                        <p className="mt-2 text-xs text-muted-foreground">{notification.time}</p>
+                        <p className="mt-2 text-xs text-muted-foreground">
+                          {new Date(notification.createdAt).toLocaleString()}
+                        </p>
                       </div>
                     ))
                   )}

@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
+import Link from "next/link"
 import { DashboardSidebar } from "@/components/dashboard/sidebar"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -22,6 +23,8 @@ export default function SettingsPage() {
     twoFactorAuth: false,
     profileVisibility: "public",
   })
+  const [isDeleting, setIsDeleting] = useState(false)
+  const [isLoggingOutAll, setIsLoggingOutAll] = useState(false)
   const { addToast } = useToast()
 
   const handleToggle = (key: keyof typeof settings) => {
@@ -33,20 +36,62 @@ export default function SettingsPage() {
   }
 
   const handleChangePassword = () => {
-    addToast("info", "Password change functionality coming soon!")
+    router.push("/dashboard/password")
   }
 
   const handleLogoutAll = async () => {
-    if (confirm("Logout from all devices?")) {
+    if (!confirm("Logout from all devices? You'll be logged out everywhere.")) {
+      return
+    }
+
+    setIsLoggingOutAll(true)
+    try {
+      const response = await fetch("/api/auth/logout-all", {
+        method: "POST",
+        credentials: "include",
+      })
+
+      if (!response.ok) {
+        const data = await response.json().catch(() => null)
+        throw new Error(data?.error || "Failed to logout")
+      }
+
       await logout()
-      router.push("/auth/login")
       addToast("success", "Logged out from all devices!")
+      router.push("/auth/login")
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Failed to logout from all devices"
+      addToast("error", message)
+    } finally {
+      setIsLoggingOutAll(false)
     }
   }
 
-  const handleDeleteAccount = () => {
-    if (confirm("Are you sure? This action cannot be undone.")) {
-      addToast("error", "Account deletion functionality coming soon!")
+  const handleDeleteAccount = async () => {
+    const confirmed = confirm("Are you sure? This action cannot be undone.")
+    if (!confirmed) return
+
+    setIsDeleting(true)
+    try {
+      const response = await fetch("/api/account", {
+        method: "DELETE",
+        credentials: "include",
+      })
+
+      if (!response.ok) {
+        const data = await response.json().catch(() => null)
+        throw new Error(data?.error || "Failed to delete account")
+      }
+
+      await logout()
+      addToast("success", "Account deleted. Goodbye!")
+      router.push("/auth/login")
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to delete account"
+      addToast("error", message)
+    } finally {
+      setIsDeleting(false)
     }
   }
 
@@ -202,9 +247,10 @@ export default function SettingsPage() {
                 variant="outline"
                 className="w-full gap-2 justify-start"
                 onClick={handleLogoutAll}
+                disabled={isLoggingOutAll}
               >
                 <LogOut className="h-4 w-4" />
-                Logout from All Devices
+                {isLoggingOutAll ? "Logging out..." : "Logout from All Devices"}
               </Button>
             </CardContent>
           </Card>
@@ -222,9 +268,10 @@ export default function SettingsPage() {
                 variant="destructive"
                 className="gap-2"
                 onClick={handleDeleteAccount}
+                disabled={isDeleting}
               >
                 <Trash2 className="h-4 w-4" />
-                Delete Account
+                {isDeleting ? "Deleting..." : "Delete Account"}
               </Button>
             </CardContent>
           </Card>

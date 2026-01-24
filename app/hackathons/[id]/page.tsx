@@ -1,3 +1,6 @@
+"use client"
+
+import { use, useMemo, useState } from "react"
 import Image from "next/image"
 import Link from "next/link"
 import { Navbar } from "@/components/navbar"
@@ -5,6 +8,9 @@ import { Footer } from "@/components/footer"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Checkbox } from "@/components/ui/checkbox"
 import { hackathons } from "@/lib/data"
 import {
   Calendar,
@@ -16,10 +22,150 @@ import {
   Heart,
 } from "lucide-react"
 import { HackathonTabs } from "@/components/hackathon-tabs"
+import { useSession } from "@/components/session-provider"
 
-export default async function HackathonDetailPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params
-  const hackathon = hackathons.find((h) => h.id === id) || hackathons[0]
+function useHackathon(id: string) {
+  return useMemo(() => hackathons.find((h) => h.id === id) || hackathons[0], [id])
+}
+
+function RegisterSection({ hackathonId }: { hackathonId: string }) {
+  const hackathon = useHackathon(hackathonId)
+  const { user, isLoading } = useSession()
+  const [mode, setMode] = useState<"individual" | "team">("individual")
+  const [teamName, setTeamName] = useState("")
+  const [memberEmails, setMemberEmails] = useState("")
+  const [consent, setConsent] = useState(false)
+  const [status, setStatus] = useState<"idle" | "success" | "error">("idle")
+  const [message, setMessage] = useState("")
+  const [isSubmitting, setIsSubmitting] = useState(false)
+
+  const isDeadlinePassed = new Date(hackathon.registrationDeadline).getTime() < Date.now() || hackathon.status === "closed" || hackathon.status === "past"
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!user) {
+      setStatus("error")
+      setMessage("Please sign in to register.")
+      return
+    }
+    setIsSubmitting(true)
+    setStatus("idle")
+    setMessage("")
+
+    try {
+      const response = await fetch(`/api/hackathons/${hackathon.id}/register`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          mode,
+          teamName,
+          memberEmails: memberEmails
+            .split(",")
+            .map((email) => email.trim())
+            .filter(Boolean),
+          consent,
+          formData: {},
+        }),
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        setStatus("success")
+        setMessage(`Registered successfully${data.teamId ? ` with team ${data.teamName}` : ""}.`)
+        setTeamName("")
+        setMemberEmails("")
+        setConsent(false)
+      } else {
+        const error = await response.json()
+        setStatus("error")
+        setMessage(error.error || "Registration failed")
+      }
+    } catch (error) {
+      console.error("Registration error:", error)
+      setStatus("error")
+      setMessage("Registration failed. Please try again.")
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  return (
+    <Card id="register" className="border-border bg-card mt-12">
+      <CardHeader>
+        <CardTitle>Register</CardTitle>
+      </CardHeader>
+      <CardContent>
+        {isDeadlinePassed && (
+          <p className="mb-4 text-sm text-red-500">Registration is closed for this hackathon.</p>
+        )}
+        {!isLoading && !user && !isDeadlinePassed && (
+          <p className="mb-4 text-sm text-muted-foreground">Please sign in to continue registration.</p>
+        )}
+        <form className="space-y-4" onSubmit={handleSubmit}>
+          <div className="space-y-2">
+            <Label>Participation type</Label>
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                variant={mode === "individual" ? "default" : "outline"}
+                onClick={() => setMode("individual")}
+              >
+                Individual
+              </Button>
+              <Button
+                type="button"
+                variant={mode === "team" ? "default" : "outline"}
+                onClick={() => setMode("team")}
+              >
+                Team
+              </Button>
+            </div>
+          </div>
+
+          {mode === "team" && (
+            <div className="space-y-2">
+              <Label htmlFor="teamName">Team name</Label>
+              <Input
+                id="teamName"
+                placeholder="E.g. Quantum Ninjas"
+                value={teamName}
+                onChange={(e) => setTeamName(e.target.value)}
+                required={mode === "team"}
+              />
+              <div className="space-y-2">
+                <Label htmlFor="members">Invite teammates (emails, comma-separated)</Label>
+                <Input
+                  id="members"
+                  placeholder="dev1@example.com, dev2@example.com"
+                  value={memberEmails}
+                  onChange={(e) => setMemberEmails(e.target.value)}
+                />
+              </div>
+            </div>
+          )}
+
+          <div className="flex items-start gap-2">
+            <Checkbox id="consent" checked={consent} onCheckedChange={(checked) => setConsent(!!checked)} />
+            <Label htmlFor="consent" className="text-sm text-muted-foreground">
+              I agree to the rules, code of conduct, and consent to communication about this hackathon.
+            </Label>
+          </div>
+
+          {status === "success" && <p className="text-sm text-green-500">{message}</p>}
+          {status === "error" && <p className="text-sm text-red-500">{message}</p>}
+
+          <Button type="submit" disabled={isSubmitting || isDeadlinePassed} className="w-full md:w-auto">
+            {isSubmitting ? "Submitting..." : isDeadlinePassed ? "Registration Closed" : "Submit Registration"}
+          </Button>
+        </form>
+      </CardContent>
+    </Card>
+  )}
+
+export default function HackathonDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params)
+  const hackathon = useHackathon(id)
   const similarHackathons = hackathons.filter((h) => h.id !== id && h.category === hackathon.category).slice(0, 3)
 
   return (
@@ -66,10 +212,12 @@ export default async function HackathonDetailPage({ params }: { params: Promise<
                 <Button variant="outline" size="icon" aria-label="Share hackathon">
                   <Share2 className="h-4 w-4" />
                 </Button>
-                <Button size="lg" className="gap-2">
-                  Register Now
-                  <ExternalLink className="h-4 w-4" />
-                </Button>
+                <Link href="#register">
+                  <Button size="lg" className="gap-2">
+                    Register Now
+                    <ExternalLink className="h-4 w-4" />
+                  </Button>
+                </Link>
               </div>
             </div>
 
@@ -123,6 +271,8 @@ export default async function HackathonDetailPage({ params }: { params: Promise<
 
           <div className="mt-12 pb-16">
             <HackathonTabs hackathon={hackathon} />
+
+            <RegisterSection hackathonId={hackathon.id} />
 
             {similarHackathons.length > 0 && (
               <div className="mt-16">

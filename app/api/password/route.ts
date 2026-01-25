@@ -3,6 +3,8 @@ import { getSession } from "@/lib/session"
 import { getPrismaClient } from "@/lib/prisma-multi-db"
 import bcrypt from "bcrypt"
 
+export const runtime = "nodejs"
+
 function validatePasswordStrength(password: string): { valid: boolean; error?: string } {
   if (password.length < 8) {
     return { valid: false, error: "Password must be at least 8 characters" }

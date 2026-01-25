@@ -3,6 +3,8 @@ import { getSession } from "@/lib/session"
 import { prisma } from "@/lib/prisma"
 import bcrypt from "bcrypt"
 
+export const runtime = "nodejs"
+
 export async function POST(request: Request) {
   const session = await getSession()
 

@@ -2,6 +2,8 @@ import { NextResponse } from "next/server"
 import { getSession } from "@/lib/session"
 import { getPrismaClient } from "@/lib/prisma-multi-db"
 
+export const runtime = "nodejs"
+
 // GET: Get current user's profile
 export async function GET() {
   const session = await getSession()

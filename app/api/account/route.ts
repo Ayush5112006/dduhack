@@ -2,6 +2,8 @@ import { NextResponse } from "next/server"
 import { getPrismaClient } from "@/lib/prisma-multi-db"
 import { destroySession, getSession } from "@/lib/session"
 
+export const runtime = "nodejs"
+
 export async function DELETE() {
   const session = await getSession()
 

@@ -61,7 +61,7 @@ export function HackathonTabs({ hackathon, isOrganizer = false }: HackathonTabsP
     if (title && description && difficulty && prize) {
       setProblemStatements([
         ...problemStatements,
-        { id: Date.now().toString(), title, description, difficulty, prize }
+        { id: Math.random().toString(36).substring(2, 11), title, description, difficulty, prize }
       ])
     }
   }

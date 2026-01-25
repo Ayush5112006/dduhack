@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useCallback } from "react"
+import React, { useState, useCallback, useRef } from "react"
 import { X, CheckCircle, AlertCircle, Info } from "lucide-react"
 
 interface Toast {
@@ -20,10 +20,11 @@ export const ToastContext = React.createContext<ToastContextType | undefined>(un
 
 export function ToastProvider({ children }: { children: React.ReactNode }) {
   const [toasts, setToasts] = useState<Toast[]>([])
+  const counterRef = useRef(0)
 
   const addToast = useCallback((type: "success" | "error" | "info", message: string, duration = 3000) => {
-    // Use a high-entropy id to avoid duplicate keys when multiple toasts fire in the same tick
-    const id = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+    // Use a counter + random to avoid duplicate keys
+    const id = `toast-${++counterRef.current}-${Math.random().toString(36).slice(2, 9)}`
     setToasts((prev) => [...prev, { id, message, type, duration }])
 
     if (duration > 0) {

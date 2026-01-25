@@ -1,6 +1,7 @@
 "use client"
 
 import Link from "next/link"
+import { useState, useEffect } from "react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -42,9 +43,12 @@ const prizeFormatter = new Intl.NumberFormat("en-US", {
 })
 
 export function PublicHackathonCard({ hackathon }: { hackathon: PublicHackathon }) {
-  const now = new Date()
-  const endDate = new Date(hackathon.endDate)
-  const isRegistrationOpen = hackathon.status === "upcoming" || hackathon.status === "live"
+  const [isRegistrationOpen, setIsRegistrationOpen] = useState(false)
+  
+  useEffect(() => {
+    setIsRegistrationOpen(hackathon.status === "upcoming" || hackathon.status === "live")
+  }, [hackathon.status])
+  
   const ctaLabel = isRegistrationOpen ? "Register" : "View Details"
   const ctaVariant = isRegistrationOpen ? "default" : "secondary"
 

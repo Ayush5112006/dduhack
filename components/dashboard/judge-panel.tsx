@@ -55,7 +55,7 @@ export function JudgePanel() {
     presentation: 5,
     feedback: '',
   })
-  const { toast } = useToast()
+  const { addToast } = useToast()
 
   // Fetch submissions assigned to this judge
   useEffect(() => {
@@ -68,25 +68,17 @@ export function JudgePanel() {
         if (response.ok) {
           setSubmissions(data.submissions || [])
         } else {
-          toast({
-            title: 'Error',
-            description: data.error || 'Failed to load submissions',
-            variant: 'destructive',
-          })
+          addToast('error', data.error || 'Failed to load submissions')
         }
       } catch (error) {
-        toast({
-          title: 'Error',
-          description: 'Failed to fetch submissions',
-          variant: 'destructive',
-        })
+        addToast('error', 'Failed to fetch submissions')
       } finally {
         setLoading(false)
       }
     }
 
     fetchSubmissions()
-  }, [toast])
+  }, [])
 
   const handleScoreChange = (metric: keyof Omit<ScoreData, 'feedback'>, value: number) => {
     setScoreData((prev) => ({
@@ -122,10 +114,7 @@ export function JudgePanel() {
       const data = await response.json()
 
       if (response.ok) {
-        toast({
-          title: 'Success',
-          description: 'Score submitted successfully!',
-        })
+        addToast('success', 'Score submitted successfully!')
         // Update submission in list with new score
         setSubmissions((prev) =>
           prev.map((sub) =>
@@ -147,18 +136,10 @@ export function JudgePanel() {
         )
         setSelectedSubmission(null)
       } else {
-        toast({
-          title: 'Error',
-          description: data.error || 'Failed to submit score',
-          variant: 'destructive',
-        })
+        addToast('error', data.error || 'Failed to submit score')
       }
     } catch (error) {
-      toast({
-        title: 'Error',
-        description: 'Failed to submit score',
-        variant: 'destructive',
-      })
+      addToast('error', 'Failed to submit score')
     } finally {
       setScoring(false)
     }

@@ -8,8 +8,8 @@ const Alert = React.forwardRef<
   React.ComponentPropsWithoutRef<typeof AlertPrimitive.Root> & {
     variant?: "default" | "destructive"
   }
->(({ className, ...props }, ref) => (
-  <AlertPrimitive.Root ref={ref} {...props} />
+>(({ variant, ...props }, ref) => (
+  <AlertPrimitive.Root {...props} />
 ))
 Alert.displayName = "Alert"
 

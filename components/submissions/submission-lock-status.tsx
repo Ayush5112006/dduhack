@@ -57,16 +57,32 @@ export function DeadlineCountdown({ hackathon }: DeadlineCountdownProps) {
   const isUrgent = deadline.remaining < 24 * 60 * 60 * 1000
 
   return (
-    <Card className={`p-4 ${isUrgent ? "border-orange-200 bg-orange-50" : "border-blue-200 bg-blue-50"}`}>
-      <div className="flex items-center gap-3">
-        <Clock className={`h-5 w-5 ${isUrgent ? "text-orange-600" : "text-blue-600"}`} />
-        <div>
-          <p className={`text-sm font-semibold ${isUrgent ? "text-orange-900" : "text-blue-900"}`}>
-            Submission Deadline
-          </p>
-          <p className={`text-xs ${isUrgent ? "text-orange-700" : "text-blue-700"}`}>{deadline.formatted}</p>
-        </div>
-      </div>
-    </Card>
+    <>
+      {isUrgent ? (
+        <Card className="p-4 border-orange-200 bg-orange-50">
+          <div className="flex items-center gap-3">
+            <Clock className="h-5 w-5 text-orange-600" />
+            <div>
+              <p className="text-sm font-semibold text-orange-900">
+                Submission Deadline
+              </p>
+              <p className="text-xs text-orange-700">{deadline.formatted}</p>
+            </div>
+          </div>
+        </Card>
+      ) : (
+        <Card className="p-4 border-blue-200 bg-blue-50">
+          <div className="flex items-center gap-3">
+            <Clock className="h-5 w-5 text-blue-600" />
+            <div>
+              <p className="text-sm font-semibold text-blue-900">
+                Submission Deadline
+              </p>
+              <p className="text-xs text-blue-700">{deadline.formatted}</p>
+            </div>
+          </div>
+        </Card>
+      )}
+    </>
   )
 }

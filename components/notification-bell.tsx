@@ -106,7 +106,7 @@ export function NotificationBell() {
                 </div>
                 <p className="text-xs text-muted-foreground">{notif.message}</p>
                 <p className="text-xs text-muted-foreground">
-                  {new Date(notif.createdAt).toLocaleString()}
+                  {new Date(notif.createdAt).toISOString().replace('T', ' ').split('.')[0]}
                 </p>
               </DropdownMenuItem>
             ))

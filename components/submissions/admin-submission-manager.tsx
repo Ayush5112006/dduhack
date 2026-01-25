@@ -220,7 +220,7 @@ export function AdminSubmissionManager({ hackathonId }: SubmissionManagerProps) 
                     </TableCell>
                     <TableCell>{submission.score}/100</TableCell>
                     <TableCell className="text-sm">
-                      {new Date(submission.createdAt).toLocaleDateString()}
+                      {new Date(submission.createdAt).toISOString().split('T')[0]}
                     </TableCell>
                     <TableCell>
                       <Button
@@ -261,7 +261,7 @@ export function AdminSubmissionManager({ hackathonId }: SubmissionManagerProps) 
                 <div>
                   <label className="text-sm font-medium">Submitted</label>
                   <p className="text-sm text-gray-600">
-                    {new Date(selectedSubmission.createdAt).toLocaleString()}
+                    {new Date(selectedSubmission.createdAt).toISOString().replace('T', ' ').split('.')[0]}
                   </p>
                 </div>
                 <div>
@@ -374,7 +374,7 @@ export function AdminSubmissionManager({ hackathonId }: SubmissionManagerProps) 
                       </p>
                       {isLocked && selectedSubmission.lockedAt && (
                         <p className="text-xs text-gray-500">
-                          Locked at {new Date(selectedSubmission.lockedAt).toLocaleString()}
+                          Locked at {new Date(selectedSubmission.lockedAt).toISOString().replace('T', ' ').split('.')[0]}
                         </p>
                       )}
                     </div>

@@ -74,7 +74,7 @@ export function Navbar() {
           type="button"
           className="lg:hidden p-2 touch-manipulation"
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
+          aria-label="Toggle menu"
         >
           {mobileMenuOpen ? (
             <X className="h-6 w-6 text-foreground" />

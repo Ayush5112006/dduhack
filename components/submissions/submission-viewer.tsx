@@ -104,7 +104,7 @@ export function SubmissionCard({ submission }: { submission: Submission }) {
         {/* Submitted Date */}
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
           <Clock className="h-3 w-3" />
-          Submitted {new Date(submission.submittedAt).toLocaleDateString()}
+          Submitted {new Date(submission.submittedAt).toISOString().split('T')[0]}
         </div>
 
         {/* Actions */}

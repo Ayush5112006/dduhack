@@ -142,7 +142,7 @@ export async function PUT(request: NextRequest) {
             status: "approved",
             consent: true,
             fullName: session.userName,
-            email: session.userEmail,
+            userEmail: session.userEmail,
           },
         })
       }

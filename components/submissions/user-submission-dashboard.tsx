@@ -106,7 +106,7 @@ export function UserSubmissionDashboard() {
                     <div>
                       <CardTitle className="text-lg">{submission.title}</CardTitle>
                       <p className="text-sm text-gray-600 mt-1">
-                        Submitted on {new Date(submission.createdAt).toLocaleDateString()}
+                        Submitted on {new Date(submission.createdAt).toISOString().split('T')[0]}
                       </p>
                     </div>
                     <Badge className={statusColors[submission.status]}>

@@ -102,7 +102,7 @@ export async function POST(request: NextRequest) {
         type,
         title,
         message,
-        actionUrl,
+        link: actionUrl,
         hackathonId,
         read: false,
       },

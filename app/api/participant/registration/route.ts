@@ -177,7 +177,7 @@ export async function POST(request: NextRequest) {
         status: "approved",
         consent,
         fullName: profileData.fullName,
-        email: profileData.email,
+        userEmail: profileData.email,
         phone: profileData.phone || null,
         university: profileData.university || null,
         enrollmentNumber: profileData.enrollmentNumber || null,

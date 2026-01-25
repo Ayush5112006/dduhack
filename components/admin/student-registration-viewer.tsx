@@ -109,7 +109,7 @@ export function StudentRegistrationViewer({
       reg.team?.name || "-",
       reg.status,
       reg.skills || "",
-      new Date(reg.createdAt).toLocaleDateString(),
+      new Date(reg.createdAt).toISOString().split('T')[0],
     ])
 
     const csv = [
@@ -395,7 +395,7 @@ export function StudentRegistrationViewer({
                             <div>
                               <Label className="text-muted-foreground">Registration Date</Label>
                               <p className="font-medium">
-                                {new Date(selectedRegistration.createdAt).toLocaleString()}
+                                {new Date(selectedRegistration.createdAt).toISOString().replace('T', ' ').split('.')[0]}
                               </p>
                             </div>
                           </div>

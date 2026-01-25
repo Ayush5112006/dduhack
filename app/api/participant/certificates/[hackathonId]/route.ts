@@ -34,7 +34,8 @@ export async function GET(_req: Request, { params }: { params: { hackathonId: st
     const filePath = path.join(process.cwd(), 'public', 'uploads', 'certificates', filename)
 
     const fileBuffer = await fs.readFile(filePath)
-    return new Response(fileBuffer, {
+    const uint8Buffer = new Uint8Array(fileBuffer.buffer, fileBuffer.byteOffset, fileBuffer.byteLength)
+    return new Response(uint8Buffer, {
       status: 200,
       headers: {
         'Content-Type': 'application/pdf',

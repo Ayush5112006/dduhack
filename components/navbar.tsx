@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Logo } from "@/components/logo"
@@ -20,6 +20,11 @@ const categories: Array<{
 
 export function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -74,9 +79,9 @@ export function Navbar() {
           type="button"
           className="lg:hidden p-2 touch-manipulation"
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          aria-label="Toggle menu"
+          aria-label={mobileMenuOpen ? "Close menu" : "Toggle menu"}
         >
-          {mobileMenuOpen ? (
+          {mounted && mobileMenuOpen ? (
             <X className="h-6 w-6 text-foreground" />
           ) : (
             <Menu className="h-6 w-6 text-foreground" />
@@ -84,7 +89,7 @@ export function Navbar() {
         </button>
       </nav>
 
-      {mobileMenuOpen && (
+      {mounted && mobileMenuOpen && (
         <div className="border-t border-border bg-background px-4 py-4 lg:hidden">
           <div className="flex flex-col gap-4">
             <div className="relative">

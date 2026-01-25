@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Logo } from "@/components/logo"
@@ -19,7 +19,61 @@ const categories: Array<{
 }> = []
 
 export function Navbar() {
+  const [mounted, setMounted] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  // Return early if not mounted to ensure server/client match
+  if (!mounted) {
+    return (
+      <header className="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <nav className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 lg:px-8">
+          <div className="flex items-center gap-8">
+            <Link href="/" className="flex items-center gap-2">
+              <Logo />
+            </Link>
+            <div className="hidden items-center gap-6 lg:flex">
+              <Link href="/hackathons" className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground">
+                Hackathons
+              </Link>
+              <Link href="/organizer/dashboard" className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground">
+                Host a Hackathon
+              </Link>
+            </div>
+          </div>
+          <div className="hidden items-center gap-4 lg:flex">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                type="search"
+                placeholder="Search hackathons..."
+                className="w-64 bg-secondary pl-9"
+              />
+            </div>
+            <Link href="/auth/login">
+              <Button variant="ghost" className="text-muted-foreground">
+                Log in
+              </Button>
+            </Link>
+            <Link href="/auth/register">
+              <Button>Sign up</Button>
+            </Link>
+          </div>
+          <button
+            type="button"
+            className="lg:hidden p-2 touch-manipulation"
+            aria-label="Toggle menu"
+            disabled
+          >
+            <Menu className="h-6 w-6 text-foreground" />
+          </button>
+        </nav>
+      </header>
+    )
+  }
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">

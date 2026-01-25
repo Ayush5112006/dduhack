@@ -12,6 +12,8 @@
 import { prisma } from '@/lib/prisma'
 import { NextResponse } from 'next/server'
 
+export const runtime = "nodejs"
+
 export async function GET(request: Request) {
   try {
     // Example 1: Get all live hackathons

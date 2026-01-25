@@ -127,9 +127,17 @@ export function ParticipantDashboard() {
     }).format(new Date(date))
   }
 
+  const [currentTime, setCurrentTime] = useState(Date.now())
+
+  useEffect(() => {
+    setCurrentTime(Date.now())
+    const interval = setInterval(() => setCurrentTime(Date.now()), 60000) // Update every minute
+    return () => clearInterval(interval)
+  }, [])
+
   const isDeadlineSoon = (deadline: string) => {
     const daysLeft = Math.ceil(
-      (new Date(deadline).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)
+      (new Date(deadline).getTime() - currentTime) / (1000 * 60 * 60 * 24)
     )
     return daysLeft <= 3 && daysLeft > 0
   }

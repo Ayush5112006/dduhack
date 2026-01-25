@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from "next/server"
 import { teams } from "@/lib/data"
 
-export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function POST(request: NextRequest, { params }: { params: Promise<{ teamId: string }> }) {
   try {
-    const { id } = await params
-    const team = teams.find((t) => t.id === id)
+    const { teamId } = await params
+    const team = teams.find((t) => t.id === teamId)
 
     if (!team) {
       return NextResponse.json({ error: "Team not found" }, { status: 404 })

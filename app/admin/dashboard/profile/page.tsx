@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import Image from "next/image"
 import { DashboardSidebar } from "@/components/dashboard/sidebar"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -9,6 +10,10 @@ import { Badge } from "@/components/ui/badge"
 import { Label } from "@/components/ui/label"
 import { Trophy, Award, FileText, MapPin, Globe, Github, Linkedin, Twitter, Edit2, Save, X } from "lucide-react"
 import { useToast } from "@/components/toast-provider"
+
+const Skeleton = ({ className }: { className?: string }) => (
+  <div className={`animate-pulse rounded-md bg-muted ${className ?? ""}`} />
+)
 
 type Profile = {
   avatar?: string
@@ -110,7 +115,16 @@ export default function ProfilePage() {
       <div className="min-h-screen bg-background">
         <DashboardSidebar type="admin" />
         <main className="ml-64 p-8">
-          <div className="text-center py-12">Loading profile...</div>
+          <div className="max-w-4xl space-y-4">
+            <div className="flex items-center gap-3">
+              <Skeleton className="h-14 w-14 rounded-full" />
+              <div className="flex-1 space-y-2">
+                <Skeleton className="h-4 w-1/3" />
+                <Skeleton className="h-3 w-1/4" />
+              </div>
+            </div>
+            <Skeleton className="h-64" />
+          </div>
         </main>
       </div>
     )
@@ -158,10 +172,17 @@ export default function ProfilePage() {
                     <div className="space-y-2">
                       <Label>Profile Image</Label>
                       <div className="flex items-center gap-3">
-                        <div className="h-14 w-14 rounded-full bg-primary/10 flex items-center justify-center text-sm font-semibold text-primary overflow-hidden">
+                        <div className="relative h-14 w-14 rounded-full bg-primary/10 flex items-center justify-center text-sm font-semibold text-primary overflow-hidden">
                           {formData.avatar ? (
-                            // eslint-disable-next-line @next/next/no-img-element
-                            <img src={formData.avatar} alt="avatar preview" className="h-full w-full object-cover" />
+                            <Image
+                              src={formData.avatar}
+                              alt="avatar preview"
+                              fill
+                              sizes="56px"
+                              className="object-cover"
+                              loading="lazy"
+                              decoding="async"
+                            />
                           ) : (
                             (user.name || user.email).charAt(0).toUpperCase()
                           )}
@@ -264,10 +285,17 @@ export default function ProfilePage() {
                 ) : (
                   <div className="space-y-4">
                     <div className="flex flex-col sm:flex-row sm:items-center sm:gap-4">
-                      <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center text-lg font-semibold text-primary overflow-hidden">
+                      <div className="relative h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center text-lg font-semibold text-primary overflow-hidden">
                         {profile.avatar ? (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img src={profile.avatar} alt={user.name} className="h-full w-full object-cover" />
+                          <Image
+                            src={profile.avatar}
+                            alt={user.name}
+                            fill
+                            sizes="64px"
+                            className="object-cover"
+                            loading="lazy"
+                            decoding="async"
+                          />
                         ) : (
                           (user.name || user.email).charAt(0).toUpperCase()
                         )}

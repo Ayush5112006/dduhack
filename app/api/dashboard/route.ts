@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getSession } from "@/lib/session"
 import { getPrismaClient } from "@/lib/prisma-multi-db"
+import { getCache, setCache } from "@/lib/cache"
+import { checkRateLimit } from "@/lib/security"
 
 export async function GET(request: NextRequest) {
   try {
@@ -10,39 +12,62 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
+    const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown"
+    const rate = checkRateLimit(`dashboard:${ip}:${session.userId}`, 30, 60_000)
+    if (!rate.allowed) {
+      return NextResponse.json(
+        { error: "Too many requests" },
+        { status: 429, headers: { "Retry-After": String(rate.retryAfter ?? 60) } }
+      )
+    }
+
+    const cacheKey = `dashboard:${session.userRole}:${session.userId}:v1`
+    const cached = await getCache(cacheKey)
+    if (cached) {
+      return NextResponse.json(cached, {
+        headers: {
+          "Cache-Control": "private, s-maxage=30, stale-while-revalidate=120",
+        },
+      })
+    }
+
     // Get database client for user's role
     const db = getPrismaClient(session.userRole)
 
-    // Get user with all related data
-    const user = await db.user.findUnique({
-      where: { id: session.userId },
-      include: {
-        profile: true,
-        registrations: {
-          include: {
-            hackathon: true,
-          },
-          orderBy: { createdAt: 'desc' }
+    const [user, registrations, submissions, certificates, notifications] = await Promise.all([
+      db.user.findUnique({
+        where: { id: session.userId },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          role: true,
+          profile: true,
         },
-        submissions: {
-          include: {
-            hackathon: true,
-            scores: true,
-          },
-          orderBy: { createdAt: 'desc' }
-        },
-        certificates: {
-          include: {
-            hackathon: true,
-          },
-          orderBy: { issuedAt: 'desc' }
-        },
-        notifications: {
-          orderBy: { createdAt: 'desc' },
-          take: 10
-        }
-      }
-    })
+      }),
+      db.registration.findMany({
+        where: { userId: session.userId },
+        include: { hackathon: true },
+        orderBy: { createdAt: "desc" },
+      }),
+      db.submission.findMany({
+        where: { userId: session.userId },
+        include: { hackathon: true, scores: true },
+        orderBy: { createdAt: "desc" },
+        take: 50,
+      }),
+      db.certificate.findMany({
+        where: { userId: session.userId },
+        include: { hackathon: true },
+        orderBy: { issuedAt: "desc" },
+        take: 50,
+      }),
+      db.notification.findMany({
+        where: { userId: session.userId },
+        orderBy: { createdAt: "desc" },
+        take: 10,
+      }),
+    ])
 
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 })
@@ -50,17 +75,17 @@ export async function GET(request: NextRequest) {
 
     // Calculate statistics
     const stats = {
-      activeHackathons: user.registrations.filter(r => 
+      activeHackathons: registrations.filter(r => 
         r.hackathon.status === 'live' || r.hackathon.status === 'upcoming'
       ).length,
-      totalSubmissions: user.submissions.length,
-      wins: user.certificates.filter(c => c.type === 'winner').length,
-      unreadNotifications: user.notifications.filter(n => !n.read).length,
+      totalSubmissions: submissions.length,
+      wins: certificates.filter(c => c.type === 'winner').length,
+      unreadNotifications: notifications.filter(n => !n.read).length,
     }
 
     // Get active hackathons with submission status
-    const myHackathons = user.registrations.map(reg => {
-      const submission = user.submissions.find(s => s.hackathonId === reg.hackathonId)
+    const myHackathons = registrations.map(reg => {
+      const submission = submissions.find(s => s.hackathonId === reg.hackathonId)
       return {
         id: reg.hackathonId,
         name: reg.hackathon.title,
@@ -78,7 +103,7 @@ export async function GET(request: NextRequest) {
     })
 
     // Format notifications
-    const recentNotifications = user.notifications.map(n => ({
+    const recentNotifications = notifications.map(n => ({
       id: n.id,
       title: n.title,
       message: n.message,
@@ -87,26 +112,27 @@ export async function GET(request: NextRequest) {
       type: n.type,
       createdAt: n.createdAt,
     }))
-
-    return NextResponse.json({
+    const payload = {
       success: true,
-      user: {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        profile: user.profile,
-      },
+      user,
       stats,
       myHackathons,
       notifications: recentNotifications,
-      certificates: user.certificates.map(c => ({
+      certificates: certificates.map(c => ({
         id: c.id,
         type: c.type,
         hackathonTitle: c.hackathonTitle,
         verificationCode: c.verificationCode,
         issuedAt: c.issuedAt,
       })),
+    }
+
+    await setCache(cacheKey, payload, 30)
+
+    return NextResponse.json(payload, {
+      headers: {
+        "Cache-Control": "private, s-maxage=30, stale-while-revalidate=120",
+      },
     })
   } catch (error) {
     console.error("Dashboard error:", error)

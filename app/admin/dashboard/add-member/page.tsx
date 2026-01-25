@@ -48,7 +48,11 @@ export default function AddMemberPage() {
       })
 
       if (response.ok) {
+        const data = await response.json()
         addToast("success", "Member added successfully")
+        if (data?.tempPassword) {
+          addToast("success", `Temp password (dev): ${data.tempPassword}`)
+        }
         router.push("/admin/dashboard/users")
       } else {
         const data = await response.json()
@@ -190,7 +194,7 @@ export default function AddMemberPage() {
                       </SelectContent>
                     </Select>
                     <p className="text-xs text-muted-foreground">
-                      Choose the appropriate role for this user
+                      Choose the appropriate role for this user. An email with credentials will be sent if email is configured.
                     </p>
                   </div>
 

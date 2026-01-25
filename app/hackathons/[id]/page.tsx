@@ -12,7 +12,8 @@ import {
 } from "lucide-react"
 import { prisma } from "@/lib/prisma"
 import { getSession } from "@/lib/session"
-import { RegisterButton } from "@/components/hackathons/register-button"
+import { SmartRegistrationForm } from "@/components/smart-registration/smart-registration-form"
+import { SubmissionForm } from "@/components/submissions/submission-form"
 import Link from "next/link"
 import { notFound } from "next/navigation"
 
@@ -36,9 +37,9 @@ async function getHackathonDetail(id: string) {
 async function checkUserRegistration(hackathonId: string, userId: string) {
   const registration = await prisma.registration.findUnique({
     where: {
-      userId_hackathonId: {
-        userId,
+      hackathonId_userId: {
         hackathonId,
+        userId,
       },
     },
   })
@@ -66,8 +67,18 @@ export default async function HackathonDetailPage({
 
   const session = await getSession()
   const userId = session?.userId
+  const isAuthenticated = !!session
   const isRegistered = userId ? await checkUserRegistration(id, userId) : false
   const status = computeStatus(hackathon.startDate, hackathon.endDate)
+
+  // Fetch user profile if authenticated
+  let user = null
+  if (userId) {
+    user = await prisma.user.findUnique({
+      where: { id: userId },
+      include: { profile: true },
+    })
+  }
 
   const formatDate = (date: Date) => {
     return new Intl.DateTimeFormat("en-US", {
@@ -192,6 +203,24 @@ export default async function HackathonDetailPage({
                     </div>
                   </div>
                 )}
+
+                {hackathon.problemStatementPdf && (
+                  <div>
+                    <h2 className="text-xl font-semibold text-foreground">Resources</h2>
+                    <div className="mt-4">
+                      <Button asChild variant="outline" className="gap-2">
+                        <a href={hackathon.problemStatementPdf} download>
+                          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                            <polyline points="7 10 12 15 17 10"></polyline>
+                            <line x1="12" y1="15" x2="12" y2="3"></line>
+                          </svg>
+                          Download Problem Statement
+                        </a>
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -229,17 +258,38 @@ export default async function HackathonDetailPage({
                   </div>
 
                   {isRegistered ? (
-                    <div className="rounded-lg bg-emerald-500/10 p-3 text-center text-sm text-emerald-600">
-                      ✓ You're registered for this hackathon
+                    <div className="space-y-4">
+                      <div className="rounded-lg bg-emerald-500/10 p-3 text-center text-sm text-emerald-600">
+                        ✓ You're registered for this hackathon
+                      </div>
+                      {status === "live" && (
+                        <SubmissionForm
+                          hackathonId={id}
+                          hackathonTitle={hackathon.title}
+                          isAuthenticated={isAuthenticated}
+                          isRegistered={true}
+                        />
+                      )}
                     </div>
                   ) : status === "live" ? (
-                    <RegisterButton hackathonId={id} />
+                    <SmartRegistrationForm
+                      hackathonId={id}
+                      hackathonTitle={hackathon.title}
+                      isAuthenticated={isAuthenticated}
+                      userProfile={{
+                        email: user?.email || "",
+                        name: user?.name || "",
+                        phone: user?.profile?.phone || "",
+                        university: user?.profile?.university || "",
+                        skills: user?.profile?.skills ? JSON.parse(user.profile.skills) : [],
+                        githubProfile: user?.profile?.github || "",
+                        linkedinProfile: user?.profile?.linkedin || "",
+                      }}
+                    />
                   ) : (
-                    <Button disabled className="w-full">
-                      {status === "upcoming"
-                        ? "Registration Opens Soon"
-                        : "Event Closed"}
-                    </Button>
+                    <div className="rounded-lg bg-slate-500/10 p-3 text-center text-sm text-slate-600">
+                      Registration is closed for this event
+                    </div>
                   )}
 
                   <Button

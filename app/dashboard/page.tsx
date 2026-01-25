@@ -1,7 +1,8 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo, useCallback } from "react"
 import Link from "next/link"
+import Image from "next/image"
 import { DashboardSidebar } from "@/components/dashboard/sidebar"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -17,6 +18,10 @@ import {
 } from "@/components/ui/table"
 import { Trophy, FileText, Award, Bell, Calendar, ArrowRight, ExternalLink, Trash2, Edit, Search } from "lucide-react"
 import { useToast } from "@/components/toast-provider"
+
+const Skeleton = ({ className }: { className?: string }) => (
+  <div className={`animate-pulse rounded-md bg-muted ${className ?? ""}`} />
+)
 
 export default function ParticipantDashboard() {
   const [myHackathons, setMyHackathons] = useState<any[]>([])
@@ -66,19 +71,22 @@ export default function ParticipantDashboard() {
     fetchDashboardData()
   }, [addToast])
 
-  const filteredHackathons = myHackathons.filter(h =>
-    h.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    h.role.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredHackathons = useMemo(() =>
+    myHackathons.filter((h) =>
+      h.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      h.role.toLowerCase().includes(searchQuery.toLowerCase())
+    ),
+    [myHackathons, searchQuery]
   )
 
-  const handleDeleteHackathon = (id: string) => {
+  const handleDeleteHackathon = useCallback((id: string) => {
     if (confirm("Are you sure you want to delete this hackathon from your list?")) {
       setMyHackathons(myHackathons.filter(h => h.id !== id))
       addToast("success", "Hackathon removed successfully!")
     }
-  }
+  }, [addToast, myHackathons])
 
-  const handleEditHackathon = (id: string) => {
+  const handleEditHackathon = useCallback((id: string) => {
     const hackathon = myHackathons.find(h => h.id === id)
     if (!hackathon) return
     
@@ -89,9 +97,9 @@ export default function ParticipantDashboard() {
       ))
       addToast("success", "Role updated successfully!")
     }
-  }
+  }, [addToast, myHackathons])
 
-  const handleSubmitProject = (id: string) => {
+  const handleSubmitProject = useCallback((id: string) => {
     const hackathon = myHackathons.find(h => h.id === id)
     if (!hackathon) return
     
@@ -111,27 +119,45 @@ export default function ParticipantDashboard() {
       ))
       addToast("success", "Project submitted successfully!")
     }
-  }
+  }, [addToast, myHackathons])
 
-  const handleClearNotification = (id: string) => {
+  const handleClearNotification = useCallback((id: string) => {
     setNotifications(notifications.filter(n => n.id !== id))
     addToast("info", "Notification removed")
-  }
+  }, [addToast, notifications])
 
-  const handleMarkAsRead = (id: string) => {
+  const handleMarkAsRead = useCallback((id: string) => {
     setNotifications(notifications.map(n =>
       n.id === id ? { ...n, unread: false } : n
     ))
-  }
+  }, [notifications])
 
-  const unreadCount = notifications.filter(n => !n.read).length
+  const unreadCount = useMemo(() => notifications.filter((n) => !n.read).length, [notifications])
 
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
-          <p className="mt-4 text-muted-foreground">Loading dashboard...</p>
+        <div className="w-full max-w-5xl px-4 space-y-4">
+          <div className="flex items-center gap-3">
+            <Skeleton className="h-12 w-12 rounded-full" />
+            <div className="flex-1 space-y-2">
+              <Skeleton className="h-4 w-1/3" />
+              <Skeleton className="h-3 w-1/4" />
+            </div>
+            <Skeleton className="h-7 w-16" />
+          </div>
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            {[...Array(4)].map((_, idx) => (
+              <Skeleton key={idx} className="h-28" />
+            ))}
+          </div>
+          <div className="grid gap-4 lg:grid-cols-3">
+            <Skeleton className="h-96 lg:col-span-2" />
+            <div className="space-y-4">
+              <Skeleton className="h-48" />
+              <Skeleton className="h-40" />
+            </div>
+          </div>
         </div>
       </div>
     )
@@ -146,10 +172,17 @@ export default function ParticipantDashboard() {
           <Card className="mb-8 border-border bg-card">
             <CardContent className="p-6">
               <div className="flex items-center gap-4">
-                <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center text-2xl font-bold text-primary overflow-hidden">
+                <div className="relative h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center text-2xl font-bold text-primary overflow-hidden">
                   {userData.profile?.avatar ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={userData.profile.avatar} alt={userData.name || 'avatar'} className="h-full w-full object-cover" />
+                    <Image
+                      src={userData.profile.avatar}
+                      alt={userData.name || "avatar"}
+                      fill
+                      sizes="64px"
+                      className="object-cover"
+                      loading="lazy"
+                      decoding="async"
+                    />
                   ) : (
                     (userData.name || userData.email).charAt(0).toUpperCase()
                   )}

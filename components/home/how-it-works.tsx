@@ -9,16 +9,16 @@ const steps: Array<{
 
 export function HowItWorks() {
   return (
-    <section className="border-b border-border bg-card py-20">
+    <section className="border-b border-border bg-card py-12 sm:py-16 md:py-20">
       <div className="mx-auto max-w-7xl px-4 lg:px-8">
         <div className="text-center">
-          <h2 className="text-3xl font-bold text-foreground">How It Works</h2>
-          <p className="mt-2 text-muted-foreground">
+          <h2 className="text-2xl sm:text-3xl font-bold text-foreground">How It Works</h2>
+          <p className="mt-2 text-sm sm:text-base text-muted-foreground px-2">
             Your journey from idea to winning project in four simple steps
           </p>
         </div>
 
-        <div className="mt-16 grid gap-8 md:grid-cols-2 lg:grid-cols-4">
+        <div className="mt-10 sm:mt-12 md:mt-16 grid gap-8 sm:gap-10 md:grid-cols-2 lg:grid-cols-4">
           {steps.map((step, index) => (
             <div key={step.title} className="relative">
               {index < steps.length - 1 && (

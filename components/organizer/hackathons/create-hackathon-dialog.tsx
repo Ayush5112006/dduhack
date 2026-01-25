@@ -32,6 +32,7 @@ type HackathonFormValues = {
   tags: string
   isFree: boolean
   featured: boolean
+  problemStatementPdf: File | null
 }
 
 interface Props {
@@ -53,6 +54,7 @@ function formatDateInput(value?: string | Date) {
 export function CreateHackathonDialog({ trigger, open, onOpenChange, onSuccess, hackathon }: Props) {
   const { addToast } = useToast()
   const [loading, setLoading] = useState(false)
+  const [uploading, setUploading] = useState(false)
   const [internalOpen, setInternalOpen] = useState(false)
 
   const isEdit = Boolean(hackathon)
@@ -74,6 +76,7 @@ export function CreateHackathonDialog({ trigger, open, onOpenChange, onSuccess, 
     tags: hackathon?.tags?.join(", ") || "",
     isFree: true,
     featured: false,
+    problemStatementPdf: null,
   })
 
   const controlledOpen = open ?? internalOpen
@@ -99,8 +102,23 @@ export function CreateHackathonDialog({ trigger, open, onOpenChange, onSuccess, 
     }
   }, [hackathon])
 
-  const handleChange = (key: keyof HackathonFormValues, value: string | boolean) => {
+  const handleChange = (key: keyof HackathonFormValues, value: string | boolean | File | null) => {
     setForm((prev) => ({ ...prev, [key]: value }))
+  }
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      if (file.type !== "application/pdf") {
+        addToast("error", "Only PDF files are allowed")
+        return
+      }
+      if (file.size > 10 * 1024 * 1024) {
+        addToast("error", "File size must be less than 10MB")
+        return
+      }
+      handleChange("problemStatementPdf", file)
+    }
   }
 
   const payload = useMemo(() => {
@@ -138,12 +156,30 @@ export function CreateHackathonDialog({ trigger, open, onOpenChange, onSuccess, 
 
     setLoading(true)
     try {
+      // First, create/update the hackathon
       const res = await fetch(
         hackathon ? `/api/organizer/hackathons/${hackathon.id}` : "/api/organizer/hackathons",
         {
           method: hackathon ? "PUT" : "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
+          body: JSON.stringify({
+            title: payload.title,
+            description: payload.description,
+            category: payload.category,
+            mode: payload.mode,
+            difficulty: payload.difficulty,
+            prizeAmount: payload.prizeAmount,
+            prize: payload.prize,
+            location: payload.location,
+            startDate: payload.startDate,
+            endDate: payload.endDate,
+            registrationDeadline: payload.registrationDeadline,
+            eligibility: payload.eligibility,
+            banner: payload.banner,
+            tags: payload.tags,
+            isFree: payload.isFree,
+            featured: payload.featured,
+          }),
         }
       )
 
@@ -155,6 +191,32 @@ export function CreateHackathonDialog({ trigger, open, onOpenChange, onSuccess, 
       }
 
       const saved = json.hackathon as HackathonSummary
+      const hackathonIdToUse = saved.id
+
+      // Then upload PDF if provided
+      if (form.problemStatementPdf) {
+        setUploading(true)
+        const formData = new FormData()
+        formData.append("file", form.problemStatementPdf)
+
+        const pdfRes = await fetch(
+          `/api/organizer/hackathons/${hackathonIdToUse}/upload-pdf`,
+          {
+            method: "POST",
+            body: formData,
+          }
+        )
+
+        const pdfJson = await pdfRes.json()
+        if (!pdfRes.ok) {
+          console.warn("PDF upload failed:", pdfJson.error)
+          addToast("warning", "Hackathon created but PDF upload failed")
+        } else {
+          addToast("success", "PDF uploaded successfully")
+        }
+        setUploading(false)
+      }
+
       onSuccess(saved)
       addToast("success", hackathon ? "Hackathon updated" : "Hackathon created")
       setOpen(false)
@@ -327,6 +389,25 @@ export function CreateHackathonDialog({ trigger, open, onOpenChange, onSuccess, 
                 placeholder="Who can participate?"
               />
             </div>
+            <div className="space-y-2 md:col-span-2">
+              <Label htmlFor="problemStatementPdf">Problem Statement PDF</Label>
+              <div className="flex items-center gap-2">
+                <Input
+                  id="problemStatementPdf"
+                  type="file"
+                  accept=".pdf"
+                  onChange={handleFileChange}
+                  disabled={uploading}
+                  className="cursor-pointer"
+                />
+                {form.problemStatementPdf && (
+                  <span className="text-xs text-green-600 font-medium">
+                    ✓ {form.problemStatementPdf.name}
+                  </span>
+                )}
+              </div>
+              <p className="text-xs text-muted-foreground">Upload PDF only (max 10MB). This will be available for download on the public hackathon page.</p>
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
@@ -347,11 +428,11 @@ export function CreateHackathonDialog({ trigger, open, onOpenChange, onSuccess, 
           </div>
 
           <DialogFooter className="gap-2">
-            <Button type="button" variant="outline" onClick={() => setOpen(false)} disabled={loading}>
+            <Button type="button" variant="outline" onClick={() => setOpen(false)} disabled={loading || uploading}>
               Cancel
             </Button>
-            <Button type="submit" disabled={loading}>
-              {loading ? "Saving..." : isEdit ? "Save changes" : "Create"}
+            <Button type="submit" disabled={loading || uploading}>
+              {loading || uploading ? "Saving..." : isEdit ? "Save changes" : "Create"}
             </Button>
           </DialogFooter>
         </form>

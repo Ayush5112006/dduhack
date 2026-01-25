@@ -3,13 +3,11 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { ArrowRight, Trophy, Users, Calendar } from "lucide-react"
-import { getPrismaClient } from "@/lib/prisma-multi-db"
+import { prisma } from "@/lib/prisma"
 
 async function getFeaturedHackathons() {
   try {
-    const organizerDb = getPrismaClient("organizer")
-    
-    const hackathons = await organizerDb.hackathon.findMany({
+    const hackathons = await prisma.hackathon.findMany({
       where: {
         owner: {
           role: { in: ["ORGANIZER", "organizer"] },
@@ -61,30 +59,30 @@ export async function FeaturedHackathons() {
   }
 
   return (
-    <section className="border-b border-border bg-card py-20">
+    <section className="border-b border-border bg-card py-12 sm:py-16 md:py-20">
       <div className="mx-auto max-w-7xl px-4 lg:px-8">
-        <div className="flex items-end justify-between">
+        <div className="flex flex-col sm:flex-row items-start sm:items-end justify-between gap-4">
           <div>
-            <h2 className="text-3xl font-bold text-foreground">Featured Hackathons</h2>
-            <p className="mt-2 text-muted-foreground">
+            <h2 className="text-2xl sm:text-3xl font-bold text-foreground">Featured Hackathons</h2>
+            <p className="mt-2 text-sm sm:text-base text-muted-foreground">
               Handpicked opportunities with the best prizes and sponsors
             </p>
           </div>
-          <Link href="/hackathons" className="hidden items-center gap-1 text-sm font-medium text-primary transition-colors hover:text-primary/80 md:flex">
+          <Link href="/hackathons" className="hidden items-center gap-1 text-sm font-medium text-primary transition-colors hover:text-primary/80 md:flex touch-manipulation">
             View all <ArrowRight className="h-4 w-4" />
           </Link>
         </div>
 
         {featured.length === 0 ? (
-          <div className="mt-10 text-center py-12">
+          <div className="mt-8 sm:mt-10 text-center py-12">
             <p className="text-muted-foreground">No featured hackathons available at this time</p>
           </div>
         ) : (
-        <div className="mt-10 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        <div className="mt-8 sm:mt-10 grid gap-4 sm:gap-6 md:grid-cols-2 lg:grid-cols-3">
           {featured.map((hackathon) => (
             <Link key={hackathon.id} href={`/hackathons/${hackathon.id}`}>
-              <Card className="h-full hover:shadow-lg transition-shadow cursor-pointer overflow-hidden">
-                <CardContent className="p-6 h-full flex flex-col">
+              <Card className="h-full hover:shadow-lg transition-shadow cursor-pointer overflow-hidden touch-manipulation">
+                <CardContent className="p-4 sm:p-6 h-full flex flex-col">
                   <div className="mb-4 flex justify-between items-start gap-2">
                     <div>
                       <h3 className="font-bold text-lg mb-1 line-clamp-2">{hackathon.title}</h3>
@@ -130,9 +128,9 @@ export async function FeaturedHackathons() {
         </div>
         )}
 
-        <div className="mt-8 text-center md:hidden">
-          <Link href="/hackathons">
-            <Button variant="outline" className="gap-2 bg-transparent">
+        <div className="mt-6 sm:mt-8 text-center md:hidden">
+          <Link href="/hackathons" className="w-full sm:w-auto inline-block">
+            <Button variant="outline" className="gap-2 bg-transparent h-11 touch-manipulation w-full sm:w-auto">
               View all hackathons <ArrowRight className="h-4 w-4" />
             </Button>
           </Link>

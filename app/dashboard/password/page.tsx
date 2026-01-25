@@ -9,6 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { PasswordStrength } from "@/components/password-strength"
 import { Eye, EyeOff, ArrowLeft } from "lucide-react"
 import { useToast } from "@/components/toast-provider"
+import { Logo } from "@/components/logo"
 
 export default function ChangePasswordPage() {
   const router = useRouter()
@@ -83,10 +84,7 @@ export default function ChangePasswordPage() {
           onClick={() => router.push("/")}
           className="inline-flex items-center gap-2 hover:opacity-80 transition-opacity"
         >
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
-            <span className="text-lg font-bold text-primary-foreground">H</span>
-          </div>
-          <span className="text-xl font-bold text-foreground">HackHub</span>
+          <Logo />
         </button>
 
         <div className="space-y-6">

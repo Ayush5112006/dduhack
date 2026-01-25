@@ -8,11 +8,6 @@ async function getPublicHackathons(): Promise<PublicHackathon[]> {
   try {
     const organizerDb = getPrismaClient("organizer")
     const hackathons = await organizerDb.hackathon.findMany({
-      where: {
-        owner: {
-          role: { in: ["ORGANIZER", "organizer"] },
-        },
-      },
       include: {
         owner: true,
         _count: {
@@ -54,6 +49,8 @@ async function getPublicHackathons(): Promise<PublicHackathon[]> {
       organizer: h.owner?.name || "Anonymous",
       status: computeStatus(h.startDate, h.endDate),
       category: h.category || "General",
+      difficulty: h.difficulty || "Beginner",
+      mode: h.mode || "Online",
       startDate: h.startDate,
       endDate: h.endDate,
       location: h.location || "Virtual",

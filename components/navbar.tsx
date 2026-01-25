@@ -4,6 +4,7 @@ import Link from "next/link"
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Logo } from "@/components/logo"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -25,10 +26,7 @@ export function Navbar() {
       <nav className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 lg:px-8">
         <div className="flex items-center gap-8">
           <Link href="/" className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
-              <span className="text-lg font-bold text-primary-foreground">H</span>
-            </div>
-            <span className="text-xl font-bold text-foreground">HackHub</span>
+            <Logo />
           </Link>
           
           <div className="hidden items-center gap-6 lg:flex">
@@ -74,8 +72,9 @@ export function Navbar() {
 
         <button
           type="button"
-          className="lg:hidden"
+          className="lg:hidden p-2 touch-manipulation"
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
         >
           {mobileMenuOpen ? (
             <X className="h-6 w-6 text-foreground" />
@@ -93,21 +92,21 @@ export function Navbar() {
               <Input
                 type="search"
                 placeholder="Search hackathons..."
-                className="w-full bg-secondary pl-9"
+                className="w-full bg-secondary pl-9 h-11 touch-manipulation"
               />
             </div>
-            <Link href="/hackathons" className="text-sm font-medium text-muted-foreground">
+            <Link href="/hackathons" className="text-base font-medium text-muted-foreground py-2 touch-manipulation" onClick={() => setMobileMenuOpen(false)}>
               Hackathons
             </Link>
-            <Link href="/organizer/dashboard" className="text-sm font-medium text-muted-foreground">
+            <Link href="/organizer/dashboard" className="text-base font-medium text-muted-foreground py-2 touch-manipulation" onClick={() => setMobileMenuOpen(false)}>
               Host a Hackathon
             </Link>
             <div className="flex gap-2 pt-2">
               <Link href="/auth/login" className="flex-1">
-                <Button variant="outline" className="w-full bg-transparent">Log in</Button>
+                <Button variant="outline" className="w-full bg-transparent h-11 touch-manipulation">Log in</Button>
               </Link>
               <Link href="/auth/register" className="flex-1">
-                <Button className="w-full">Sign up</Button>
+                <Button className="w-full h-11 touch-manipulation">Sign up</Button>
               </Link>
             </div>
           </div>

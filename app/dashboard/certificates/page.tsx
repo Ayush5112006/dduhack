@@ -54,7 +54,12 @@ export default function CertificatesPage() {
   }
 
   const handleDownload = (cert: Certificate) => {
-    addToast("success", `Certificate ${cert.verificationCode} ready for download`)
+    // Trigger secure download via API using verification code
+    try {
+      window.open(`/api/participant/certificates/by-code/${cert.verificationCode}`, '_blank')
+    } catch (e) {
+      addToast("error", "Failed to initiate download")
+    }
   }
 
   const handleShare = (cert: Certificate) => {

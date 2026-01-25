@@ -3,7 +3,7 @@ import { cookies } from "next/headers"
 import { getPrismaClient } from "@/lib/prisma-multi-db"
 
 const SESSION_COOKIE_NAME = "hackathon_session"
-const SESSION_EXPIRY = 24 * 60 * 60 * 1000 // 24 hours
+const SESSION_EXPIRY = 60 * 60 * 1000 // 1 hour (3600 seconds)
 
 export interface Session {
   token: string
@@ -47,12 +47,15 @@ async function readTokenFromCookie(): Promise<{ token: string; expiresAt: number
 
 async function setTokenCookie(session: Omit<Session, "loginTime">) {
   const cookieStore = await getCookieStore()
+  const maxAge = Math.floor((session.expiresAt - Date.now()) / 1000)
+  
   cookieStore.set(SESSION_COOKIE_NAME, serializeCookiePayload(session), {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
-    maxAge: Math.floor((session.expiresAt - Date.now()) / 1000),
+    maxAge: maxAge > 0 ? maxAge : 0,
     path: "/",
+    priority: "high",
   })
 }
 
@@ -98,6 +101,12 @@ export async function getSession(): Promise<Session | null> {
   const cookiePayload = await readTokenFromCookie()
   if (!cookiePayload) return null
 
+  // Check if cookie has expired
+  if (cookiePayload.expiresAt < Date.now()) {
+    await clearTokenCookie()
+    return null
+  }
+
   // Try to find session in all role-based databases
   let sessionRecord = null
   
@@ -120,9 +129,10 @@ export async function getSession(): Promise<Session | null> {
     return null
   }
 
+  // Double check database expiry
   if (sessionRecord.expiresAt.getTime() < Date.now()) {
     const db = getPrismaClient(sessionRecord.user.role as "participant" | "organizer" | "admin")
-    await db.session.delete({ where: { token: sessionRecord.token } }).catch(() => {})
+    await db.session.deleteMany({ where: { token: sessionRecord.token } }).catch(() => {})
     await clearTokenCookie()
     return null
   }

@@ -8,20 +8,20 @@ import { Calendar, Clock, Trophy, Users } from "lucide-react"
 export type PublicHackathon = {
   id: string
   title: string
-  description: string | null
+  description: string
+  organizer: string
   category: string
-  mode: string
-  difficulty: string
-  prizeAmount: number
-  startDate: string
-  endDate: string
-  registrationDeadline: string
-  banner: string | null
   status: "upcoming" | "live" | "past"
-  counts?: {
-    registrations?: number
-    teams?: number
-  }
+  difficulty?: string
+  mode?: string
+  startDate: Date
+  endDate: Date
+  location: string
+  prizeAmount: number
+  registrations: number
+  submissions: number
+  tags?: string[]
+  problemStatementPdf?: string
 }
 
 const statusStyles: Record<PublicHackathon["status"], string> = {
@@ -41,26 +41,20 @@ const prizeFormatter = new Intl.NumberFormat("en-US", {
 
 export function PublicHackathonCard({ hackathon }: { hackathon: PublicHackathon }) {
   const now = new Date()
-  const registrationOpen = new Date(hackathon.registrationDeadline) > now && hackathon.status !== "past"
-  const ctaLabel = registrationOpen ? "Register" : "View"
-  const ctaVariant = registrationOpen ? "default" : "secondary"
-  const registrationCount = hackathon.counts?.registrations ?? 0
-  const teamCount = hackathon.counts?.teams ?? 0
+  const endDate = new Date(hackathon.endDate)
+  const isRegistrationOpen = hackathon.status === "upcoming" || hackathon.status === "live"
+  const ctaLabel = isRegistrationOpen ? "Register" : "View Details"
+  const ctaVariant = isRegistrationOpen ? "default" : "secondary"
 
   return (
-    <Card className="flex h-full flex-col overflow-hidden border-border/70">
+    <Card className="flex h-full flex-col overflow-hidden border-border/70 transition-shadow hover:shadow-lg">
       <div
         className="h-36 w-full bg-gradient-to-r from-primary/15 via-primary/5 to-transparent"
-        style={{
-          backgroundImage: hackathon.banner ? `url(${hackathon.banner})` : undefined,
-          backgroundSize: "cover",
-          backgroundPosition: "center",
-        }}
       />
       <CardHeader className="flex flex-1 flex-col gap-3">
         <div className="flex items-start justify-between gap-3">
           <div className="space-y-2">
-            <CardTitle className="text-xl leading-tight text-foreground line-clamp-1">{hackathon.title}</CardTitle>
+            <CardTitle className="text-xl leading-tight text-foreground line-clamp-2">{hackathon.title}</CardTitle>
             <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
               <Badge variant="outline" className={`rounded-full border-transparent px-2.5 py-1 capitalize ${statusStyles[hackathon.status]}`}>
                 {hackathon.status}
@@ -68,33 +62,38 @@ export function PublicHackathonCard({ hackathon }: { hackathon: PublicHackathon 
               <Badge variant="secondary" className="rounded-full px-2.5 py-1 text-xs capitalize">
                 {hackathon.category}
               </Badge>
-              <Badge variant="outline" className="rounded-full px-2.5 py-1 text-xs">
-                {hackathon.mode}
-              </Badge>
-              <Badge variant="outline" className="rounded-full px-2.5 py-1 text-xs">
-                {hackathon.difficulty}
-              </Badge>
+              {hackathon.mode && (
+                <Badge variant="outline" className="rounded-full px-2.5 py-1 text-xs">
+                  {hackathon.mode}
+                </Badge>
+              )}
+              {hackathon.difficulty && (
+                <Badge variant="outline" className="rounded-full px-2.5 py-1 text-xs">
+                  {hackathon.difficulty}
+                </Badge>
+              )}
             </div>
           </div>
         </div>
         <p className="text-sm text-muted-foreground line-clamp-2">{hackathon.description || "No description provided."}</p>
+        <p className="text-xs text-muted-foreground">
+          By {hackathon.organizer}
+        </p>
       </CardHeader>
       <CardContent className="flex flex-col gap-4 pb-5">
-        <CountdownTimer startDate={hackathon.startDate} endDate={hackathon.endDate} />
-
         <div className="grid grid-cols-2 gap-3 text-sm text-muted-foreground">
           <div className="flex items-center gap-2">
             <Calendar className="h-4 w-4 text-primary" />
             <div>
               <p className="text-xs uppercase tracking-wide">Starts</p>
-              <p className="font-medium text-foreground">{formatDate(hackathon.startDate)}</p>
+              <p className="font-medium text-foreground">{formatDate(hackathon.startDate.toString())}</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
             <Clock className="h-4 w-4 text-primary" />
             <div>
               <p className="text-xs uppercase tracking-wide">Ends</p>
-              <p className="font-medium text-foreground">{formatDate(hackathon.endDate)}</p>
+              <p className="font-medium text-foreground">{formatDate(hackathon.endDate.toString())}</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -107,23 +106,42 @@ export function PublicHackathonCard({ hackathon }: { hackathon: PublicHackathon 
           <div className="flex items-center gap-2">
             <Users className="h-4 w-4 text-primary" />
             <div>
-              <p className="text-xs uppercase tracking-wide">Registrations</p>
-              <p className="font-medium text-foreground">{registrationCount} regs · {teamCount} teams</p>
+              <p className="text-xs uppercase tracking-wide">Participants</p>
+              <p className="font-medium text-foreground">{hackathon.registrations}</p>
             </div>
           </div>
         </div>
 
-        <div className="flex items-center justify-between gap-3">
-          <div className="text-sm text-muted-foreground">
-            {registrationOpen ? (
-              <>Register before {formatDate(hackathon.registrationDeadline)}</>
-            ) : (
-              <>Registration closed</>
+        {hackathon.tags && hackathon.tags.length > 0 && (
+          <div className="flex flex-wrap gap-1.5">
+            {hackathon.tags.slice(0, 3).map((tag) => (
+              <Badge key={tag} variant="outline" className="text-xs">
+                {tag}
+              </Badge>
+            ))}
+            {hackathon.tags.length > 3 && (
+              <Badge variant="outline" className="text-xs">
+                +{hackathon.tags.length - 3}
+              </Badge>
             )}
           </div>
-          <Button asChild variant={ctaVariant}>
+        )}
+
+        <div className="flex gap-2">
+          <Button asChild variant={ctaVariant} className="flex-1">
             <Link href={`/hackathons/${hackathon.id}`}>{ctaLabel}</Link>
           </Button>
+          {hackathon.problemStatementPdf && (
+            <Button asChild variant="outline" size="icon" title="Download Problem Statement">
+              <a href={hackathon.problemStatementPdf} download>
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                  <polyline points="7 10 12 15 17 10"></polyline>
+                  <line x1="12" y1="15" x2="12" y2="3"></line>
+                </svg>
+              </a>
+            </Button>
+          )}
         </div>
       </CardContent>
     </Card>

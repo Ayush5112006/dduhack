@@ -4,6 +4,7 @@ import { Geist, Geist_Mono } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
 import { ToastProvider } from '@/components/toast-provider'
 import { SessionProvider } from '@/components/session-provider'
+import { ServiceWorkerRegister } from '@/components/service-worker-register'
 import './globals.css'
 
 const _geist = Geist({ subsets: ["latin"] });
@@ -13,22 +14,20 @@ export const metadata: Metadata = {
   title: 'HackHub - Find Your Next Hackathon',
   description: 'Discover and participate in the best hackathons worldwide. Build, learn, and win amazing prizes.',
   generator: 'v0.app',
+  viewport: {
+    width: 'device-width',
+    initialScale: 1,
+    maximumScale: 5,
+    userScalable: true,
+  },
   icons: {
     icon: [
       {
-        url: '/icon-light-32x32.png',
-        media: '(prefers-color-scheme: light)',
-      },
-      {
-        url: '/icon-dark-32x32.png',
-        media: '(prefers-color-scheme: dark)',
-      },
-      {
-        url: '/icon.svg',
+        url: '/logo.svg',
         type: 'image/svg+xml',
       },
     ],
-    apple: '/apple-icon.png',
+    apple: '/logo.svg',
   },
 }
 
@@ -39,12 +38,13 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`font-sans antialiased`}>
+      <body className={`font-sans antialiased overflow-x-hidden`}>
         <SessionProvider>
           <ToastProvider>
             {children}
           </ToastProvider>
         </SessionProvider>
+        <ServiceWorkerRegister />
         <Analytics />
       </body>
     </html>

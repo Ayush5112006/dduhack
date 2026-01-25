@@ -16,10 +16,14 @@ model User {
   email           String    @unique
   name            String
   password        String
+  phone           String?   // Phone number for students
   role            String    @default("participant") // participant, organizer, admin, judge
   status          String    @default("active") // active, suspended, pending
   avatar          String?
   bio             String?
+  isVerified      Boolean   @default(false) // Email verification status
+  otp             String?   // One-Time Password for verification
+  otpExpiresAt    DateTime? // OTP expiration time
   
   // Relations
   profile         UserProfile?
@@ -90,6 +94,7 @@ model Hackathon {
   banner                String?
   description           String?
   eligibility           String?
+  problemStatementPdf   String?   // Path to PDF file in /public/uploads
   
   prize                 String?
   prizeAmount           Int       @default(0)
@@ -111,6 +116,12 @@ model Hackathon {
   featured              Boolean   @default(false)
   
   participants          Int       @default(0)
+  
+  // Team settings
+  allowTeams            Boolean   @default(true)
+  minTeamSize           Int       @default(2)
+  maxTeamSize           Int       @default(5)
+  allowSoloSubmission   Boolean   @default(false)
   
   // Relations
   registrations         Registration[]
@@ -144,7 +155,22 @@ model Registration {
   status        String    @default("pending") // pending, approved, rejected
   consent       Boolean   @default(false)
   
-  formData      String?   // JSON stored as string
+  // Student-specific information
+  fullName      String?
+  phone         String?
+  university    String?
+  enrollmentNumber String?
+  branch        String?
+  year          String?
+  skills        String?
+  experience    String?
+  githubProfile String?
+  linkedinProfile String?
+  portfolioUrl  String?
+  projectIdea   String?
+  motivation    String?
+  
+  formData      String?   // JSON stored as string for additional data
   
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
@@ -184,7 +210,8 @@ model TeamMember {
   user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   
   email     String
-  status    String    // leader, invited, joined, declined
+  status    String    // joined, invited, declined
+  role      String    @default("member") // leader, member
   
   createdAt DateTime  @default(now())
   
@@ -239,6 +266,9 @@ model Submission {
   techStack       String?   // JSON array of technologies
   
   status          String    @default("draft") // draft, submitted, late
+  locked          Boolean   @default(false)   // submission is locked from editing
+  lockedAt        DateTime?
+  lockedReason    String?   // reason for lock (deadline, admin, etc)
   
   scores          Score[]
   winners         Winner[]
@@ -322,6 +352,9 @@ model Certificate {
   
   hackathonTitle  String
   
+  // Uploaded certificate file (PDF) relative URL
+  fileUrl         String?
+  
   submissionId    String?
   submission      Submission? @relation(fields: [submissionId], references: [id])
   
@@ -335,6 +368,9 @@ model Certificate {
   
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
+  
+  // Prevent multiple certificates per user per hackathon
+  @@unique([hackathonId, userId])
 }
 
 // Notification model - user notifications

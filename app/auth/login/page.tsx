@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Eye, EyeOff, Github, Chrome, ArrowLeft } from "lucide-react"
+import { Logo } from "@/components/logo"
 import {
   Select,
   SelectContent,
@@ -19,6 +20,10 @@ import {
 } from "@/components/ui/select"
 
 
+const LOCKOUT_KEY = 'login_lockout'
+const MAX_ATTEMPTS = 5
+const LOCKOUT_DURATION = 30 * 60 * 1000 // 30 minutes
+
 export default function LoginPage() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
@@ -26,9 +31,77 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [userRole, setUserRole] = useState<"participant" | "organizer" | "admin">("participant")
   const [errorMessage, setErrorMessage] = useState("")
+  const [lockoutTime, setLockoutTime] = useState<number | null>(null)
+
+  // Check for lockout on mount
+  React.useEffect(() => {
+    const lockout = localStorage.getItem(LOCKOUT_KEY)
+    if (lockout) {
+      const lockoutData = JSON.parse(lockout)
+      if (lockoutData.until > Date.now()) {
+        setLockoutTime(lockoutData.until)
+      } else {
+        localStorage.removeItem(LOCKOUT_KEY)
+      }
+    }
+  }, [])
+
+  // Update lockout timer
+  React.useEffect(() => {
+    if (!lockoutTime) return
+    
+    const interval = setInterval(() => {
+      if (Date.now() >= lockoutTime) {
+        setLockoutTime(null)
+        localStorage.removeItem(LOCKOUT_KEY)
+      }
+    }, 1000)
+
+    return () => clearInterval(interval)
+  }, [lockoutTime])
+
+  const recordFailedAttempt = () => {
+    const attemptsKey = 'login_attempts'
+    const attempts = JSON.parse(localStorage.getItem(attemptsKey) || '[]')
+    const now = Date.now()
+    
+    // Filter out attempts older than 30 minutes
+    const recentAttempts = attempts.filter((time: number) => now - time < LOCKOUT_DURATION)
+    recentAttempts.push(now)
+    
+    localStorage.setItem(attemptsKey, JSON.stringify(recentAttempts))
+    
+    if (recentAttempts.length >= MAX_ATTEMPTS) {
+      const lockUntil = now + LOCKOUT_DURATION
+      localStorage.setItem(LOCKOUT_KEY, JSON.stringify({ until: lockUntil }))
+      setLockoutTime(lockUntil)
+      return true // locked out
+    }
+    
+    return false // not locked out
+  }
+
+  const clearFailedAttempts = () => {
+    localStorage.removeItem('login_attempts')
+    localStorage.removeItem(LOCKOUT_KEY)
+    setLockoutTime(null)
+  }
+
+  const getRemainingLockoutTime = () => {
+    if (!lockoutTime) return ''
+    const remaining = Math.ceil((lockoutTime - Date.now()) / 60000)
+    return remaining > 0 ? `${remaining} minute${remaining !== 1 ? 's' : ''}` : ''
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    
+    // Check if locked out
+    if (lockoutTime && Date.now() < lockoutTime) {
+      setErrorMessage(`Too many failed attempts. Try again in ${getRemainingLockoutTime()}`)
+      return
+    }
+    
     setIsLoading(true)
     setErrorMessage("")
     
@@ -41,23 +114,40 @@ export default function LoginPage() {
           email,
           password,
           role: userRole,
-          userName: email.split("@")[0],
-          userRole,
         }),
       })
 
       if (response.ok) {
         const data = await response.json()
         const role = data?.user?.userRole || userRole
-        const redirect = role === "admin" 
-          ? "/admin/dashboard" 
-          : role === "organizer" 
-          ? "/organizer/dashboard" 
-          : "/dashboard"
-        window.location.href = redirect
+        
+        // Clear failed attempts on successful login
+        clearFailedAttempts()
+        
+        // Check if there's a stored redirect path
+        const redirectAfterLogin = sessionStorage.getItem("redirectAfterLogin")
+        if (redirectAfterLogin) {
+          sessionStorage.removeItem("redirectAfterLogin")
+          window.location.href = redirectAfterLogin
+        } else {
+          // Default redirect based on role
+          const redirect = role === "admin" 
+            ? "/admin/dashboard" 
+            : role === "organizer" 
+            ? "/organizer/dashboard" 
+            : "/dashboard"
+          window.location.href = redirect
+        }
       } else {
         const error = await response.json()
-        setErrorMessage(error.error || "Login failed")
+        const errorMsg = error.error || "Login failed"
+        setErrorMessage(errorMsg)
+        
+        // Record failed attempt and check for lockout
+        const isLockedOut = recordFailedAttempt()
+        if (isLockedOut) {
+          setErrorMessage(`Too many failed attempts. Account locked for 30 minutes in this browser.`)
+        }
       }
     } catch (error) {
       console.error("Login error:", error)
@@ -123,10 +213,7 @@ export default function LoginPage() {
       <div className="hidden w-1/2 bg-card lg:block">
         <div className="flex h-full flex-col justify-between p-12">
           <Link href="/" className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
-              <span className="text-lg font-bold text-primary-foreground">H</span>
-            </div>
-            <span className="text-xl font-bold text-foreground">HackHub</span>
+            <Logo />
           </Link>
           <div>
             <blockquote className="text-lg text-muted-foreground">
@@ -261,8 +348,12 @@ export default function LoginPage() {
                   <p className="text-sm text-red-500">{errorMessage}</p>
                 )}
 
-                <Button type="submit" className="w-full" disabled={isLoading}>
-                  {isLoading ? "Signing in..." : "Sign in"}
+                <Button type="submit" className="w-full" disabled={isLoading || !!lockoutTime}>
+                  {lockoutTime 
+                    ? `Locked (${getRemainingLockoutTime()} remaining)` 
+                    : isLoading 
+                    ? "Signing in..." 
+                    : "Sign in"}
                 </Button>
               </form>
 

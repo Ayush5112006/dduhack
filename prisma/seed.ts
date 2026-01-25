@@ -1,164 +1,14 @@
 import bcrypt from 'bcrypt'
-import { getPrismaClient } from '../lib/prisma-multi-db'
+import { PrismaClient } from '@prisma/client'
 
 async function main() {
-  console.log('🌱 Seeding databases...\n')
+  console.log('🌱 Seeding database...\n')
 
-  // =============================================
-  // SEED STUDENT DATABASE
-  // =============================================
-  console.log('📚 Seeding STUDENT database...')
-  const studentDb = getPrismaClient('participant')
-  
-  const studentPassword = await bcrypt.hash('student123', 10)
-  
-  const student1 = await studentDb.user.upsert({
-    where: { email: 'student@test.com' },
-    update: {},
-    create: {
-      email: 'student@test.com',
-      name: 'John Student',
-      password: studentPassword,
-      role: 'participant',
-      status: 'active',
-    },
-  })
-  console.log('  ✓ Ensured:', student1.email, '| Password: student123')
+  const prisma = new PrismaClient()
 
-  const student2 = await studentDb.user.upsert({
-    where: { email: 'jane.student@test.com' },
-    update: {},
-    create: {
-      email: 'jane.student@test.com',
-      name: 'Jane Student',
-      password: studentPassword,
-      role: 'participant',
-      status: 'active',
-    },
-  })
-  console.log('  ✓ Ensured:', student2.email, '| Password: student123')
-
-  // =============================================
-  // SEED ORGANIZER DATABASE
-  // =============================================
-  console.log('\n📋 Seeding ORGANIZER database...')
-  const organizerDb = getPrismaClient('organizer')
-  
-  const organizerPassword = await bcrypt.hash('organizer123', 10)
-  
-  const org1 = await organizerDb.user.upsert({
-    where: { email: 'organizer@test.com' },
-    update: {},
-    create: {
-      email: 'organizer@test.com',
-      name: 'Tech Company Inc',
-      password: organizerPassword,
-      role: 'organizer',
-      status: 'active',
-    },
-  })
-  console.log('  ✓ Ensured:', org1.email, '| Password: organizer123')
-
-  const org2 = await organizerDb.user.upsert({
-    where: { email: 'acme.organizer@test.com' },
-    update: {},
-    create: {
-      email: 'acme.organizer@test.com',
-      name: 'ACME Hackathons',
-      password: organizerPassword,
-      role: 'organizer',
-      status: 'active',
-    },
-  })
-  console.log('  ✓ Ensured:', org2.email, '| Password: organizer123')
-
-  // Create hackathons for organizers
-  console.log('\n🎯 Creating hackathons for organizers...')
-  const now = new Date()
-  const regDeadline1 = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000)
-  const startDate1 = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000)
-  const endDate1 = new Date(startDate1.getTime() + 2 * 24 * 60 * 60 * 1000)
-
-  const regDeadline2 = new Date(now.getTime() + 10 * 24 * 60 * 60 * 1000)
-  const startDate2 = new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000)
-  const endDate2 = new Date(startDate2.getTime() + 3 * 24 * 60 * 60 * 1000)
-
-  const regDeadline3 = new Date(now.getTime() - 10 * 24 * 60 * 60 * 1000)
-  const startDate3 = new Date(now.getTime() - 5 * 24 * 60 * 60 * 1000)
-  const endDate3 = new Date(startDate3.getTime() + 2 * 24 * 60 * 60 * 1000)
-
-  const hackathon1 = await organizerDb.hackathon.upsert({
-    where: { id: 'hackathon-1' },
-    update: {},
-    create: {
-      id: 'hackathon-1',
-      title: 'Web Development Challenge 2026',
-      organizer: org1.name,
-      ownerId: org1.id,
-      description: 'Build amazing web applications with modern technologies. Learn React, Next.js, and modern web development practices.',
-      category: 'Web Development',
-      difficulty: 'Intermediate',
-      startDate: startDate1,
-      endDate: endDate1,
-      registrationDeadline: regDeadline1,
-      prizeAmount: 500000,
-      location: 'Online',
-      mode: 'Online',
-    },
-  })
-  console.log('  ✓ Created:', hackathon1.title)
-
-  const hackathon2 = await organizerDb.hackathon.upsert({
-    where: { id: 'hackathon-2' },
-    update: {},
-    create: {
-      id: 'hackathon-2',
-      title: 'AI & Machine Learning Hackathon',
-      organizer: org2.name,
-      ownerId: org2.id,
-      description: 'Solve real-world problems using AI and ML. Work with datasets, build models, and create innovative AI solutions.',
-      category: 'AI/ML',
-      difficulty: 'Advanced',
-      startDate: startDate2,
-      endDate: endDate2,
-      registrationDeadline: regDeadline2,
-      prizeAmount: 750000,
-      location: 'Online',
-      mode: 'Online',
-    },
-  })
-  console.log('  ✓ Created:', hackathon2.title)
-
-  const hackathon3 = await organizerDb.hackathon.upsert({
-    where: { id: 'hackathon-3' },
-    update: {},
-    create: {
-      id: 'hackathon-3',
-      title: 'Mobile App Innovation Summit',
-      organizer: org1.name,
-      ownerId: org1.id,
-      description: 'Create innovative mobile applications for iOS and Android. Build next-gen mobile experiences.',
-      category: 'Mobile',
-      difficulty: 'Intermediate',
-      startDate: startDate3,
-      endDate: endDate3,
-      registrationDeadline: regDeadline3,
-      prizeAmount: 600000,
-      location: 'Bangalore',
-      mode: 'Hybrid',
-    },
-  })
-  console.log('  ✓ Created:', hackathon3.title)
-
-  // =============================================
-  // SEED ADMIN DATABASE
-  // =============================================
-  console.log('\n👔 Seeding ADMIN database...')
-  const adminDb = getPrismaClient('admin')
-  
+  // Admin user
   const adminPassword = await bcrypt.hash('admin123', 10)
-  
-  const admin = await adminDb.user.upsert({
+  const admin = await prisma.user.upsert({
     where: { email: 'admin@test.com' },
     update: {},
     create: {
@@ -167,52 +17,150 @@ async function main() {
       password: adminPassword,
       role: 'admin',
       status: 'active',
+      isVerified: true,
     },
   })
-  console.log('  ✓ Ensured:', admin.email, '| Password: admin123')
 
-  const superAdmin = await adminDb.user.upsert({
-    where: { email: 'superadmin@test.com' },
+  // Organizer user and demo hackathon
+  const organizerPassword = await bcrypt.hash('organizer123', 10)
+  const organizer = await prisma.user.upsert({
+    where: { email: 'organizer@test.com' },
     update: {},
     create: {
-      email: 'superadmin@test.com',
-      name: 'Super Admin',
-      password: adminPassword,
-      role: 'admin',
+      email: 'organizer@test.com',
+      name: 'Organizer One',
+      password: organizerPassword,
+      role: 'organizer',
       status: 'active',
+      isVerified: true,
     },
   })
-  console.log('  ✓ Ensured:', superAdmin.email, '| Password: admin123')
 
-  console.log('\n✅ All databases seeded successfully!\n')
+  // Participant user
+  const participantPassword = await bcrypt.hash('participant123', 10)
+  const participant = await prisma.user.upsert({
+    where: { email: 'participant@test.com' },
+    update: {},
+    create: {
+      email: 'participant@test.com',
+      name: 'Participant One',
+      password: participantPassword,
+      role: 'participant',
+      status: 'active',
+      isVerified: true,
+    },
+  })
+
+  const now = new Date()
+  const oneDay = 1000 * 60 * 60 * 24
+
+  const hackathon = await prisma.hackathon.upsert({
+    where: { id: 'demo-hackathon-1' },
+    update: {},
+    create: {
+      id: 'demo-hackathon-1',
+      title: 'Demo Hackathon',
+      organizer: 'Organizer One',
+      ownerId: organizer.id,
+      banner: null,
+      description: 'Sample event for testing organizer dashboard.',
+      prize: 'Goodies',
+      prizeAmount: 1000,
+      mode: 'Online',
+      location: 'Remote',
+      category: 'Innovation',
+      tags: '["demo","sample"]',
+      difficulty: 'Beginner',
+      registrationDeadline: new Date(now.getTime() + oneDay * 7),
+      startDate: new Date(now.getTime() + oneDay * 8),
+      endDate: new Date(now.getTime() + oneDay * 15),
+      status: 'live',
+      allowTeams: true,
+      minTeamSize: 1,
+      maxTeamSize: 5,
+      allowSoloSubmission: true,
+      featured: true,
+      participants: 10,
+    },
+  })
+
+  const registration = await prisma.registration.upsert({
+    where: { id: 'demo-registration-1' },
+    update: {},
+    create: {
+      id: 'demo-registration-1',
+      hackathonId: hackathon.id,
+      userId: participant.id,
+      userEmail: participant.email,
+      mode: 'individual',
+      status: 'approved',
+      consent: true,
+      fullName: participant.name,
+      phone: '1234567890',
+    },
+  })
+
+  const team = await prisma.team.upsert({
+    where: { id: 'demo-team-1' },
+    update: {},
+    create: {
+      id: 'demo-team-1',
+      hackathonId: hackathon.id,
+      name: 'Team Demo',
+      leaderId: participant.id,
+      leaderEmail: participant.email,
+      locked: false,
+    },
+  })
+
+  await prisma.teamMember.upsert({
+    where: { id: 'demo-team-member-1' },
+    update: {},
+    create: {
+      id: 'demo-team-member-1',
+      teamId: team.id,
+      userId: participant.id,
+      email: participant.email,
+      status: 'joined',
+      role: 'leader',
+    },
+  })
+
+  await prisma.submission.upsert({
+    where: { id: 'demo-submission-1' },
+    update: {},
+    create: {
+      id: 'demo-submission-1',
+      hackathonId: hackathon.id,
+      teamId: team.id,
+      userId: participant.id,
+      userEmail: participant.email,
+      title: 'Demo Project',
+      description: 'Sample submission for activity feed.',
+      github: 'https://github.com/example/demo',
+      status: 'submitted',
+    },
+  })
+
+  console.log('  ✓ Admin:', admin.email, '| Password: admin123')
+  console.log('  ✓ Organizer:', organizer.email, '| Password: organizer123')
+  console.log('  ✓ Participant:', participant.email, '| Password: participant123')
+  console.log('  ✓ Hackathon:', hackathon.title)
+  console.log('  ✓ Registration ID:', registration.id)
+  console.log('  ✓ Submission and team seeded')
+
+  console.log('\n✅ Database seeded successfully!\n')
   console.log('═══════════════════════════════════════')
-  console.log('📋 TEST CREDENTIALS')
-  console.log('═══════════════════════════════════════')
-  console.log('\n🎓 STUDENT LOGIN:')
-  console.log('  Email: student@test.com')
-  console.log('  Password: student123')
-  console.log('  Role: Select "Participant / Student"\n')
-  
-  console.log('📋 ORGANIZER LOGIN:')
-  console.log('  Email: organizer@test.com')
-  console.log('  Password: organizer123')
-  console.log('  Role: Select "Organizer"\n')
-  
-  console.log('👔 ADMIN LOGIN:')
-  console.log('  Email: admin@test.com')
-  console.log('  Password: admin123')
-  console.log('  Role: Select "Admin"\n')
+  console.log('👔 ADMIN LOGIN: admin@test.com / admin123 (role Admin)')
+  console.log('🧭 ORGANIZER LOGIN: organizer@test.com / organizer123 (role Organizer)')
+  console.log('🙋 PARTICIPANT LOGIN: participant@test.com / participant123 (role Participant)')
   console.log('═══════════════════════════════════════\n')
+
+  await prisma.$disconnect()
 }
 
-main()
-  .catch((e) => {
-    console.error('❌ Error seeding database:', e)
-    process.exit(1)
-  })
-  .finally(async () => {
-    // Close all database connections
-    const { closeAllDatabases } = await import('../lib/prisma-multi-db')
-    await closeAllDatabases()
-  })
+main().catch((e) => {
+  console.error('❌ Error seeding database:', e)
+  process.exit(1)
+})
 

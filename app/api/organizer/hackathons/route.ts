@@ -52,6 +52,7 @@ function serializeHackathon(h: any) {
     registrationDeadline: h.registrationDeadline,
     eligibility: h.eligibility || "",
     banner: h.banner || "",
+    problemStatementPdf: h.problemStatementPdf || "",
     status,
     tags: h.tags ? (Array.isArray(h.tags) ? h.tags : JSON.parse(h.tags)) : [],
     isFree: h.isFree,
@@ -71,11 +72,11 @@ export async function GET(request: Request) {
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
-  if (session.userRole !== "organizer") {
+  if (!["organizer", "admin"].includes(session.userRole)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 })
   }
 
-  const db = getPrismaClient("organizer")
+  const db = getPrismaClient(session.userRole as "organizer" | "admin")
   const { searchParams } = new URL(request.url)
   const q = searchParams.get("q")?.toLowerCase().trim()
   const categoryFilter = searchParams.get("category")?.toLowerCase()
@@ -115,11 +116,11 @@ export async function POST(request: Request) {
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
-  if (session.userRole !== "organizer") {
+  if (!["organizer", "admin"].includes(session.userRole)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 })
   }
 
-  const db = getPrismaClient("organizer")
+  const db = getPrismaClient(session.userRole as "organizer" | "admin")
   let body: unknown
   try {
     body = await request.json()

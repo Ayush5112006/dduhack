@@ -2,10 +2,12 @@
 
 import { useEffect, useState } from "react"
 import Link from "next/link"
+import Image from "next/image"
 import { usePathname, useRouter } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { useSession } from "@/components/session-provider"
 import { Button } from "@/components/ui/button"
+import { Logo } from "@/components/logo"
 import {
   LayoutDashboard,
   Trophy,
@@ -19,6 +21,7 @@ import {
   Menu,
   UserPlus,
   UserCircle,
+  TrendingUp,
 } from "lucide-react"
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
 
@@ -44,10 +47,12 @@ const organizerLinks = [
 
 const adminLinks = [
   { name: "Overview", href: "/admin/dashboard", icon: LayoutDashboard },
+  { name: "All Hackathons", href: "/admin/dashboard/all-hackathons", icon: Trophy },
+  { name: "Activities", href: "/admin/dashboard/activities", icon: TrendingUp },
   { name: "Approvals", href: "/admin/dashboard/approvals", icon: FileText },
   { name: "Users", href: "/admin/dashboard/users", icon: User },
   { name: "Add Member", href: "/admin/dashboard/add-member", icon: UserPlus },
-  { name: "Hackathons", href: "/admin/dashboard/hackathons", icon: Trophy },
+  { name: "Hackathons", href: "/admin/dashboard/hackathons", icon: Calendar },
   { name: "Reports", href: "/admin/dashboard/reports", icon: Bell },
   { name: "Profile", href: "/admin/dashboard/profile", icon: UserCircle },
   { name: "Settings", href: "/admin/dashboard/settings", icon: Settings },
@@ -143,10 +148,17 @@ export function DashboardSidebar({ type }: { type: DashboardType }) {
 
   const UserBlock = () => (
     <div className="flex items-center gap-3 rounded-lg px-3 py-2">
-      <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-sm font-medium text-primary overflow-hidden">
+      <div className="relative flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-sm font-medium text-primary overflow-hidden">
         {userData?.profile?.avatar ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={userData.profile.avatar} alt={userData?.user?.name || 'avatar'} className="h-full w-full object-cover" />
+          <Image
+            src={userData.profile.avatar}
+            alt={userData?.user?.name || "avatar"}
+            fill
+            sizes="36px"
+            className="object-cover"
+            loading="lazy"
+            decoding="async"
+          />
         ) : (
           getUserInitials()
         )}
@@ -163,10 +175,7 @@ export function DashboardSidebar({ type }: { type: DashboardType }) {
       {/* Mobile header with menu toggle */}
       <div className="flex items-center justify-between border-b border-border bg-card px-4 py-3 lg:hidden">
         <Link href="/" className="flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
-            <span className="text-lg font-bold text-primary-foreground">H</span>
-          </div>
-          <span className="text-lg font-bold text-foreground">HackHub</span>
+          <Logo />
         </Link>
         <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
           <SheetTrigger asChild>
@@ -178,8 +187,8 @@ export function DashboardSidebar({ type }: { type: DashboardType }) {
             <div className="border-b border-border px-6 py-4">
               <SheetHeader>
                 <SheetTitle className="flex items-center gap-2 text-lg font-semibold">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">H</div>
-                  {title}
+                  <Logo showText={false} size={28} />
+                  <span>{title}</span>
                 </SheetTitle>
               </SheetHeader>
             </div>
@@ -209,10 +218,7 @@ export function DashboardSidebar({ type }: { type: DashboardType }) {
         <div className="flex h-full flex-col">
           <div className="flex h-16 items-center border-b border-border px-6">
             <Link href="/" className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
-                <span className="text-lg font-bold text-primary-foreground">H</span>
-              </div>
-              <span className="text-xl font-bold text-foreground">HackHub</span>
+              <Logo />
             </Link>
           </div>
 

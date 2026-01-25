@@ -52,6 +52,7 @@ function serializeHackathon(h: any) {
     registrationDeadline: h.registrationDeadline,
     eligibility: h.eligibility || "",
     banner: h.banner || "",
+    problemStatementPdf: h.problemStatementPdf || "",
     status,
     tags: h.tags ? (Array.isArray(h.tags) ? h.tags : JSON.parse(h.tags)) : [],
     isFree: h.isFree,

@@ -1,17 +1,26 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getSession } from "@/lib/session"
-import { submissions, hackathons, problemStatements } from "@/lib/data"
+import { prisma } from "@/lib/prisma"
 
-export async function GET() {
-  const session = await getSession()
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+export async function GET(request: NextRequest) {
+  try {
+    const session = await getSession()
+    if (!session) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
 
-  const mine = submissions.filter((s) => s.userId === session.userId)
-  return NextResponse.json({
-    submissions: mine.map((s) => ({
-      ...s,
-      hackathon: hackathons.find((h) => h.id === s.hackathonId) || null,
-      problem: s.psId ? problemStatements.find((p) => p.id === s.psId) || null : null,
-    })),
-  })
+    // Get all submissions for the user
+    const submissions = await prisma.submission.findMany({
+      where: { userId: session.userId },
+      orderBy: { createdAt: "desc" },
+    })
+
+    return NextResponse.json(submissions)
+  } catch (error) {
+    console.error("Failed to fetch submissions:", error)
+    return NextResponse.json(
+      { error: "Failed to fetch submissions" },
+      { status: 500 }
+    )
+  }
 }

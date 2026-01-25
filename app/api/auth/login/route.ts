@@ -2,18 +2,71 @@ import { NextRequest, NextResponse } from "next/server"
 import { createSession } from "@/lib/session"
 import { getPrismaClient } from "@/lib/prisma-multi-db"
 import bcrypt from "bcrypt"
+import { 
+  checkRateLimit, 
+  checkLoginAttempts, 
+  recordFailedLogin, 
+  clearLoginAttempts,
+  sanitizeInput,
+  isValidEmail,
+  logSecurityEvent
+} from "@/lib/security"
+
+// Force Node.js runtime (crypto used in security helpers)
+export const runtime = "nodejs"
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { email, password, role } = body
+    const email = sanitizeInput(body.email?.toLowerCase() || "")
+    const password = body.password || ""
+    const role = body.role || "participant"
 
+    // Validate input
     if (!email || !password) {
       return NextResponse.json({ error: "Email and password are required" }, { status: 400 })
     }
 
+    if (!isValidEmail(email)) {
+      return NextResponse.json({ error: "Invalid email format" }, { status: 400 })
+    }
+
+    // Rate limiting by IP
+    const clientIP = request.headers.get("x-forwarded-for") || request.headers.get("x-real-ip") || "unknown"
+    const rateLimit = checkRateLimit(clientIP, 10, 60000) // 10 requests per minute
+    
+    if (!rateLimit.allowed) {
+      logSecurityEvent({
+        type: "rate_limit",
+        email,
+        ip: clientIP,
+        details: `Rate limit exceeded`,
+      })
+      return NextResponse.json(
+        { error: `Too many requests. Try again in ${rateLimit.retryAfter} seconds` },
+        { status: 429 }
+      )
+    }
+
+    // Check login attempts (brute force protection)
+    const loginCheck = checkLoginAttempts(email)
+    
+    if (!loginCheck.allowed) {
+      const lockMinutes = Math.ceil((loginCheck.lockUntil! - Date.now()) / 60000)
+      logSecurityEvent({
+        type: "suspicious_activity",
+        email,
+        ip: clientIP,
+        details: `Account locked due to too many failed attempts`,
+      })
+      return NextResponse.json(
+        { error: `Account locked. Try again in ${lockMinutes} minutes` },
+        { status: 429 }
+      )
+    }
+
     // Get the appropriate database client based on role
-    const db = getPrismaClient(role || "participant")
+    const db = getPrismaClient(role)
 
     // Find user in role-specific database
     const user = await db.user.findUnique({
@@ -21,6 +74,13 @@ export async function POST(request: NextRequest) {
     })
 
     if (!user) {
+      recordFailedLogin(email)
+      logSecurityEvent({
+        type: "login_failed",
+        email,
+        ip: clientIP,
+        details: "User not found",
+      })
       return NextResponse.json({ error: "Invalid email or password" }, { status: 401 })
     }
 
@@ -28,13 +88,29 @@ export async function POST(request: NextRequest) {
     const isValidPassword = await bcrypt.compare(password, user.password)
 
     if (!isValidPassword) {
+      recordFailedLogin(email)
+      logSecurityEvent({
+        type: "login_failed",
+        email,
+        ip: clientIP,
+        details: "Invalid password",
+      })
       return NextResponse.json({ error: "Invalid email or password" }, { status: 401 })
     }
 
     // Check if user is active
     if (user.status !== "active") {
+      logSecurityEvent({
+        type: "login_failed",
+        email,
+        ip: clientIP,
+        details: `Account status: ${user.status}`,
+      })
       return NextResponse.json({ error: "Account is suspended or pending approval" }, { status: 403 })
     }
+
+    // Clear login attempts on successful login
+    clearLoginAttempts(email)
 
     // Create session
     const session = await createSession({
@@ -42,6 +118,13 @@ export async function POST(request: NextRequest) {
       userEmail: user.email,
       userName: user.name,
       userRole: user.role as "participant" | "organizer" | "admin",
+    })
+
+    logSecurityEvent({
+      type: "login_success",
+      email,
+      ip: clientIP,
+      userAgent: request.headers.get("user-agent") || undefined,
     })
 
     return NextResponse.json({

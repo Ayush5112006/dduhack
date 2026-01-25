@@ -222,11 +222,17 @@ export default function HackathonDetailPage() {
         <Card className="mt-6 border-border/80">
           <CardHeader>
             <Tabs defaultValue={activeTab} value={activeTab} className="w-full">
-              <TabsList className="grid w-full grid-cols-4">
+              <TabsList className="grid w-full grid-cols-5">
                 <TabsTrigger value="details">Details</TabsTrigger>
                 <TabsTrigger value="participants">Participants</TabsTrigger>
                 <TabsTrigger value="submissions">Submissions</TabsTrigger>
                 <TabsTrigger value="settings">Settings</TabsTrigger>
+                <TabsTrigger
+                  value="certificates"
+                  onClick={() => router.push(`/organizer/dashboard/hackathons/${params.id}/certificates`)}
+                >
+                  Certificates
+                </TabsTrigger>
               </TabsList>
             </Tabs>
           </CardHeader>

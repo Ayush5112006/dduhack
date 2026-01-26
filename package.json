@@ -9,7 +9,6 @@
     "start": "next start",
     "lint": "next lint"
   },
-  "dev": "next dev",
   "description": "A comprehensive, production-ready hackathon management platform built with modern web technologies, featuring advanced registration, submission management, judge scoring, email notifications, and a complete admin dashboard.",
   "main": "clear-registrations.js",
   "directories": {

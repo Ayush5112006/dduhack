@@ -186,7 +186,7 @@ export function SmartRegistrationForm({
       case "skills":
         return formData.skills.length > 0 && !!formData.projectIdea
       case "team":
-        return formData.mode === "individual" || (formData.teamMembers && formData.teamMembers.length > 0)
+        return formData.mode === "individual" || (formData.teamMembers && formData.teamMembers.length > 0) === true
       case "review":
         return formData.consent
       default:

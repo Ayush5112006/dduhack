@@ -48,6 +48,9 @@ export class SmartRegistrationAnalyzer {
     const totalSkills = history.reduce((sum, reg) => sum + reg.skills.length, 0)
     const averageSkillsPerRegistration = totalRegistrations > 0 ? totalSkills / totalRegistrations : 0
 
+    // Calculate win rate
+    const winRate = totalRegistrations > 0 ? (wonRegistrations / totalRegistrations) * 100 : 0
+
     // Identify patterns
     const commonPatterns: string[] = []
     if (preferredMode === "team") {
@@ -67,7 +70,7 @@ export class SmartRegistrationAnalyzer {
       averageSkillsPerRegistration,
       preferredMode,
       topSkills,
-      winRate: totalRegistrations > 0 ? (wonRegistrations / totalRegistrations) * 100 : 0,
+      winRate,
       commonPatterns,
     }
   }

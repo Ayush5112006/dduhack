@@ -49,7 +49,7 @@ export function AdminSubmissionManager({ hackathonId }: SubmissionManagerProps) 
   const [newStatus, setNewStatus] = useState<Submission["status"]>("submitted")
   const [isLocked, setIsLocked] = useState(false)
   const [lockReason, setLockReason] = useState("")
-  const [isToggglingLock, setIsTogglingLock] = useState(false)
+  const [isTogglingLock, setIsTogglingLock] = useState(false)
 
   useEffect(() => {
     fetchSubmissions()

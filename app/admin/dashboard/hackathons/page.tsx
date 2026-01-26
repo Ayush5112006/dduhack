@@ -32,7 +32,9 @@ type Hackathon = {
   startDate: string
   endDate: string
   registrations: number
-  prizePool: number
+  submissions: number
+  prizeAmount: number
+  category: string
 }
 
 export default function HackathonsPage() {
@@ -183,9 +185,9 @@ export default function HackathonsPage() {
                             {hackathon.status}
                           </Badge>
                         </TableCell>
-                        <TableCell>{new Date(hackathon.startDate).toLocaleDateString()}</TableCell>
-                        <TableCell>{hackathon.registrations}</TableCell>
-                        <TableCell>${hackathon.prizePool.toLocaleString()}</TableCell>
+                        <TableCell>{hackathon.startDate ? new Date(hackathon.startDate).toLocaleDateString() : "N/A"}</TableCell>
+                        <TableCell>{hackathon.registrations || 0}</TableCell>
+                        <TableCell>${(hackathon.prizeAmount || 0).toLocaleString()}</TableCell>
                         <TableCell className="text-right">
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>

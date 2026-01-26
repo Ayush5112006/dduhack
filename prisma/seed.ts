@@ -51,6 +51,21 @@ async function main() {
     },
   })
 
+  // Student user
+  const studentPassword = await bcrypt.hash('student123', 10)
+  const student = await prisma.user.upsert({
+    where: { email: 'student@test.com' },
+    update: {},
+    create: {
+      email: 'student@test.com',
+      name: 'Student One',
+      password: studentPassword,
+      role: 'participant',
+      status: 'active',
+      isVerified: true,
+    },
+  })
+
   const now = new Date()
   const oneDay = 1000 * 60 * 60 * 24
 
@@ -145,6 +160,7 @@ async function main() {
   console.log('  ✓ Admin:', admin.email, '| Password: admin123')
   console.log('  ✓ Organizer:', organizer.email, '| Password: organizer123')
   console.log('  ✓ Participant:', participant.email, '| Password: participant123')
+  console.log('  ✓ Student:', student.email, '| Password: student123')
   console.log('  ✓ Hackathon:', hackathon.title)
   console.log('  ✓ Registration ID:', registration.id)
   console.log('  ✓ Submission and team seeded')
@@ -154,6 +170,7 @@ async function main() {
   console.log('👔 ADMIN LOGIN: admin@test.com / admin123 (role Admin)')
   console.log('🧭 ORGANIZER LOGIN: organizer@test.com / organizer123 (role Organizer)')
   console.log('🙋 PARTICIPANT LOGIN: participant@test.com / participant123 (role Participant)')
+  console.log('👨‍🎓 STUDENT LOGIN: student@test.com / student123 (role Participant)')
   console.log('═══════════════════════════════════════\n')
 
   await prisma.$disconnect()

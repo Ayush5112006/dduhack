@@ -14,7 +14,7 @@ export async function PUT(
 
     const { id: hackathonId, submissionId } = await params
     const body = await request.json()
-    const { status, score, feedback } = body
+    const { status, scores, feedback } = body
 
     // Verify submission exists and belongs to hackathon
     const submission = await prisma.submission.findUnique({
@@ -33,8 +33,6 @@ export async function PUT(
       where: { id: submissionId },
       data: {
         status,
-        score,
-        feedback,
       },
     })
 

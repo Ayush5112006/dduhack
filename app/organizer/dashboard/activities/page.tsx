@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { DashboardSidebar } from "@/components/dashboard/sidebar"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -98,14 +99,17 @@ export default function OrganizerActivitiesPage() {
   const teamActionCount = activities.filter((a) => a.type === "team_action").length
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Hackathon Activities</h1>
-          <p className="text-muted-foreground mt-1">Monitor registrations, submissions, and team formations</p>
-        </div>
-      </div>
+    <div className="min-h-screen bg-background">
+      <DashboardSidebar type="organizer" />
+      <main className="ml-64 p-8">
+        <div className="space-y-6">
+          {/* Header */}
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold tracking-tight">Hackathon Activities</h1>
+              <p className="text-muted-foreground mt-1">Monitor registrations, submissions, and team formations</p>
+            </div>
+          </div>
 
       {/* Stats Cards */}
       <div className="grid gap-4 md:grid-cols-4">
@@ -287,6 +291,8 @@ export default function OrganizerActivitiesPage() {
           </CardContent>
         </Card>
       </div>
+        </div>
+      </main>
     </div>
   )
 }

@@ -102,7 +102,6 @@ export function AdvancedRegistrationForm({
         body: JSON.stringify({
           hackathonId,
           mode,
-          teamName: mode === "team" ? formData.teamName : undefined,
           memberEmails: mode === "team" ? teamMembers.filter(Boolean) : undefined,
           ...formData,
           consent,

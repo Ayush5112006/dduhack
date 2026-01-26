@@ -186,7 +186,7 @@ export async function POST(
       const filepath = join(process.cwd(), "public", "submissions", filename)
 
       try {
-        await writeFile(filepath, Buffer.from(buffer))
+        await writeFile(filepath, new Uint8Array(buffer))
         uploadedFiles.push(`/submissions/${filename}`)
       } catch (error) {
         console.error("File upload error:", error)
@@ -220,15 +220,11 @@ export async function POST(
         teamId: teamId || undefined,
         title,
         description,
-        technologiesUsed: technologiesUsed.join(","),
-        gitHubLink,
-        liveLink,
-        deploymentLink,
+        techStack: JSON.stringify(technologiesUsed),
+        github: gitHubLink,
+        demo: liveLink,
         video,
-        documentation,
-        teamContributions,
-        additionalNotes,
-        fileUrls: uploadedFiles.join(","),
+        files: JSON.stringify(uploadedFiles),
         status: "submitted",
       },
       include: {
@@ -243,23 +239,27 @@ export async function POST(
 
     // Send email notifications
     try {
-      // Send confirmation email to submitter
-      await sendSubmissionReceived(submission.user.email, {
-        name: submission.user.name,
-        hackathonName: submission.hackathon.title,
-        projectTitle: title,
-        submissionUrl: `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/dashboard/submissions/${submission.id}`,
-      })
+      if (submission.user && submission.hackathon) {
+        // Send confirmation email to submitter
+        await sendSubmissionReceived(submission.user.email, {
+          name: submission.user.name,
+          hackathonName: submission.hackathon.title,
+          projectTitle: title,
+          submissionUrl: `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/dashboard/submissions/${submission.id}`,
+        })
 
-      // Send notification email to organizer
-      const organizerEmail = submission.hackathon.owner.email
-      const organizerName = submission.hackathon.owner.name
-      await sendSubmissionReceived(organizerEmail, {
-        name: organizerName,
-        hackathonName: submission.hackathon.title,
-        projectTitle: title,
-        submissionUrl: `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/organizer/dashboard/submissions/${submission.id}`,
-      })
+        // Send notification email to organizer
+        if (submission.hackathon.owner) {
+          const organizerEmail = submission.hackathon.owner.email
+          const organizerName = submission.hackathon.owner.name
+          await sendSubmissionReceived(organizerEmail, {
+            name: organizerName,
+            hackathonName: submission.hackathon.title,
+            projectTitle: title,
+            submissionUrl: `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/organizer/dashboard/submissions/${submission.id}`,
+          })
+        }
+      }
     } catch (emailError) {
       console.error("Failed to send submission emails:", emailError)
       // Don't fail the submission if email fails

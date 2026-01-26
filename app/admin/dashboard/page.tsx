@@ -6,7 +6,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
   Table,
   TableBody,
@@ -16,30 +15,18 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/components/ui/tabs"
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import {
-  Users,
-  Trophy,
-  FileText,
-  AlertTriangle,
-  MoreHorizontal,
-  Search,
-  Loader2,
-  Trash2,
-  Eye,
-  UserCheck,
-  UserX,
-  Ban,
-  CheckCircle2,
-  TrendingUp,
-  Activity,
-  Calendar,
-  DollarSign,
-} from "lucide-react"
+import { Users, Trophy, FileText, DollarSign } from "lucide-react"
 import { useToast } from "@/components/toast-provider"
 import Link from "next/link"
 
@@ -69,14 +56,6 @@ type AdminHackathon = {
   createdAt: string
 }
 
-type ActivityLog = {
-  id: string
-  type: string
-  user: string
-  action: string
-  timestamp: string
-}
-
 type AnalyticsData = {
   totalUsers: number
   totalHackathons: number
@@ -89,11 +68,9 @@ type AnalyticsData = {
 export default function AdminDashboardPage() {
   const [users, setUsers] = useState<AdminUser[]>([])
   const [hackathons, setHackathons] = useState<AdminHackathon[]>([])
-  const [activities, setActivities] = useState<ActivityLog[]>([])
   const [analytics, setAnalytics] = useState<AnalyticsData | null>(null)
   const [loadingUsers, setLoadingUsers] = useState(true)
   const [loadingHackathons, setLoadingHackathons] = useState(true)
-  const [loadingActivities, setLoadingActivities] = useState(true)
   const [searchQuery, setSearchQuery] = useState("")
   const [statusFilter, setStatusFilter] = useState("all")
   const { addToast } = useToast()
@@ -101,7 +78,6 @@ export default function AdminDashboardPage() {
   useEffect(() => {
     fetchUsers()
     fetchHackathons()
-    fetchActivities()
     fetchAnalytics()
   }, [])
 
@@ -142,21 +118,6 @@ export default function AdminDashboardPage() {
       addToast("error", "Unable to load hackathons")
     } finally {
       setLoadingHackathons(false)
-    }
-  }
-
-  async function fetchActivities() {
-    setLoadingActivities(true)
-    try {
-      const res = await fetch("/api/admin/activities")
-      const data = await res.json()
-      if (res.ok) {
-        setActivities(data.activities || [])
-      }
-    } catch (error) {
-      console.error(error)
-    } finally {
-      setLoadingActivities(false)
     }
   }
 
@@ -233,7 +194,6 @@ export default function AdminDashboardPage() {
 
       setHackathons(hackathons.filter((h) => h.id !== id))
       addToast("success", "Hackathon deleted")
-      fetchActivities()
     } catch (error) {
       console.error(error)
       addToast("error", "Unable to delete hackathon")
@@ -311,7 +271,7 @@ export default function AdminDashboardPage() {
                   </div>
                   {stat.trend !== 0 && (
                     <Badge variant="outline" className="gap-1">
-                      <TrendingUp className="h-3 w-3" />
+                      <span className="inline-block h-3 w-3 rounded-full bg-muted-foreground/40" />
                       {stat.trend > 0 ? '+' : ''}{stat.trend}%
                     </Badge>
                   )}
@@ -330,10 +290,6 @@ export default function AdminDashboardPage() {
           <CardHeader>
             <div className="flex items-center justify-between">
               <CardTitle>Platform Management</CardTitle>
-              <Badge variant="outline" className="gap-2">
-                <Activity className="h-3 w-3" />
-                {activities.length} recent activities
-              </Badge>
             </div>
           </CardHeader>
           <CardContent>
@@ -341,17 +297,16 @@ export default function AdminDashboardPage() {
               <TabsList>
                 <TabsTrigger value="users">Users</TabsTrigger>
                 <TabsTrigger value="hackathons">Hackathons</TabsTrigger>
-                <TabsTrigger value="activity">Activity Log</TabsTrigger>
               </TabsList>
 
               <div className="mt-6 flex gap-3">
                 <div className="relative flex-1">
-                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">🔍</span>
                   <Input
                     placeholder="Search..."
                     className="pl-10"
                     value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchQuery(e.target.value)}
                   />
                 </div>
                 <select
@@ -371,7 +326,7 @@ export default function AdminDashboardPage() {
               <TabsContent value="users" className="mt-6">
                 {loadingUsers ? (
                   <div className="flex items-center justify-center py-12">
-                    <Loader2 className="mr-2 h-5 w-5 animate-spin text-muted-foreground" />
+                    <span className="mr-2 inline-block h-5 w-5 animate-spin rounded-full border-2 border-muted-foreground border-t-transparent" />
                     <p className="text-muted-foreground">Loading users...</p>
                   </div>
                 ) : (
@@ -414,7 +369,7 @@ export default function AdminDashboardPage() {
                               <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
                                   <Button variant="ghost" size="icon">
-                                    <MoreHorizontal className="h-4 w-4" />
+                                    <span className="h-4 w-4">⋯</span>
                                   </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end">
@@ -424,12 +379,12 @@ export default function AdminDashboardPage() {
                                   >
                                     {user.status === "active" ? (
                                       <>
-                                        <Ban className="h-4 w-4" />
+                                        <span className="h-4 w-4">⛔</span>
                                         Suspend User
                                       </>
                                     ) : (
                                       <>
-                                        <CheckCircle2 className="h-4 w-4" />
+                                        <span className="h-4 w-4">✔️</span>
                                         Activate User
                                       </>
                                     )}
@@ -448,7 +403,7 @@ export default function AdminDashboardPage() {
               <TabsContent value="hackathons" className="mt-6">
                 {loadingHackathons ? (
                   <div className="flex items-center justify-center py-12">
-                    <Loader2 className="mr-2 h-5 w-5 animate-spin text-muted-foreground" />
+                    <span className="mr-2 inline-block h-5 w-5 animate-spin rounded-full border-2 border-muted-foreground border-t-transparent" />
                     <p className="text-muted-foreground">Loading hackathons...</p>
                   </div>
                 ) : (
@@ -489,13 +444,13 @@ export default function AdminDashboardPage() {
                               <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
                                   <Button variant="ghost" size="icon">
-                                    <MoreHorizontal className="h-4 w-4" />
+                                    <span className="h-4 w-4">⋯</span>
                                   </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end">
                                   <DropdownMenuItem asChild className="gap-2">
                                     <Link href={`/hackathons/${hackathon.id}`}>
-                                      <Eye className="h-4 w-4" />
+                                      <span className="h-4 w-4">👁️</span>
                                       View
                                     </Link>
                                   </DropdownMenuItem>
@@ -504,7 +459,7 @@ export default function AdminDashboardPage() {
                                     className="gap-2"
                                     disabled={hackathon.status === "live"}
                                   >
-                                    <CheckCircle2 className="h-4 w-4" />
+                                    <span className="h-4 w-4">✔️</span>
                                     Mark as Live
                                   </DropdownMenuItem>
                                   <DropdownMenuItem
@@ -512,14 +467,14 @@ export default function AdminDashboardPage() {
                                     className="gap-2"
                                     disabled={hackathon.status === "past"}
                                   >
-                                    <Calendar className="h-4 w-4" />
+                                    <span className="h-4 w-4">📅</span>
                                     Mark as Past
                                   </DropdownMenuItem>
                                   <DropdownMenuItem
                                     onClick={() => deleteHackathon(hackathon.id)}
                                     className="gap-2 text-destructive"
                                   >
-                                    <Trash2 className="h-4 w-4" />
+                                    <span className="h-4 w-4">🗑️</span>
                                     Delete
                                   </DropdownMenuItem>
                                 </DropdownMenuContent>
@@ -533,41 +488,6 @@ export default function AdminDashboardPage() {
                 )}
               </TabsContent>
 
-              <TabsContent value="activity" className="mt-6">
-                {loadingActivities ? (
-                  <div className="flex items-center justify-center py-12">
-                    <Loader2 className="mr-2 h-5 w-5 animate-spin text-muted-foreground" />
-                    <p className="text-muted-foreground">Loading activities...</p>
-                  </div>
-                ) : activities.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-border bg-muted/30 px-8 py-12 text-center">
-                    <Activity className="h-12 w-12 text-muted-foreground" />
-                    <p className="text-lg font-semibold text-foreground">No recent activities</p>
-                    <p className="text-sm text-muted-foreground">Activity logs will appear here</p>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    {activities.slice(0, 20).map((activity) => (
-                      <div 
-                        key={activity.id} 
-                        className="flex items-start gap-4 rounded-lg border border-border bg-card p-4"
-                      >
-                        <div className="rounded-full bg-primary/10 p-2">
-                          <Activity className="h-4 w-4 text-primary" />
-                        </div>
-                        <div className="flex-1">
-                          <p className="text-sm font-medium text-foreground">
-                            <span className="font-semibold">{activity.user}</span> {activity.action}
-                          </p>
-                          <p className="mt-1 text-xs text-muted-foreground">
-                            {formatDate(activity.timestamp)} • {activity.type}
-                          </p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </TabsContent>
             </Tabs>
           </CardContent>
         </Card>

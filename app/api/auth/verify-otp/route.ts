@@ -67,11 +67,12 @@ export async function POST(request: NextRequest) {
     })
 
     // Create session for verified user
+    const userRole = (updatedUser.role as "participant" | "organizer" | "admin") || "participant"
     const session = await createSession({
       userId: updatedUser.id,
       userEmail: updatedUser.email,
       userName: updatedUser.name,
-      userRole: updatedUser.role,
+      userRole,
     })
 
     return NextResponse.json({

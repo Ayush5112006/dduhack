@@ -1,22 +1,30 @@
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient } from "@prisma/client"
 
-// Avoid multiple PrismaClient instances in Next.js (dev + hot reload)
-const globalForPrisma = global as unknown as { prisma?: PrismaClient };
+// Prevent multiple instances in dev / HMR
+const globalForPrisma = globalThis as unknown as { prisma?: PrismaClient }
 
-function createPrismaClient() {
-  if (!process.env.DATABASE_URL) {
-    throw new Error(
-      "Missing DATABASE_URL. Set it in .env.local (postgresql://user:pass@host:port/db)."
-    );
-  }
+const databaseUrl = process.env.DATABASE_URL
 
-  return new PrismaClient();
+if (!databaseUrl) {
+  throw new Error(
+    "DATABASE_URL is missing. Set it in your environment (e.g., .env.local) for Prisma to connect."
+  )
 }
 
-export const prisma = globalForPrisma.prisma ?? createPrismaClient();
+const prismaClient =
+  globalForPrisma.prisma ??
+  new PrismaClient({
+    datasources: {
+      db: {
+        url: databaseUrl,
+      },
+    },
+    log: process.env.NODE_ENV === "development" ? ["warn", "error"] : ["error"],
+  })
 
 if (process.env.NODE_ENV !== "production") {
-  globalForPrisma.prisma = prisma;
+  globalForPrisma.prisma = prismaClient
 }
 
-export default prisma;
+export const prisma = prismaClient
+export default prismaClient

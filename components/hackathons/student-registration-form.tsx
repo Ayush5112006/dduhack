@@ -554,7 +554,7 @@ export function StudentRegistrationForm({
             <Checkbox
               id="consent"
               checked={formData.consent}
-              onCheckedChange={(checked) => handleInputChange("consent", checked)}
+              onCheckedChange={(checked: boolean) => handleInputChange("consent", checked)}
               required
             />
             <Label

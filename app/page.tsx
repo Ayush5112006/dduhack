@@ -1,12 +1,9 @@
 import dynamicImport from "next/dynamic"
+import { Navbar } from "@/components/navbar"
 import { Footer } from "@/components/footer"
 import { LazySection } from "@/components/home/lazy-section"
 
 export const revalidate = 300
-
-const Navbar = dynamicImport(
-  () => import("@/components/navbar").then((m) => ({ default: m.Navbar }))
-)
 
 const HeroSection = dynamicImport(
   () => import("@/components/home/hero-section").then((m) => ({ default: m.HeroSection })),

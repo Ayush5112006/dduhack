@@ -424,7 +424,7 @@ export function SmartRegistrationForm({
                     </div>
                     <div>
                       <Label htmlFor="year">Year</Label>
-                      <Select value={formData.year} onValueChange={(value) => handleFieldChange("year", value)}>
+                      <Select value={formData.year} onValueChange={(value: string) => handleFieldChange("year", value)}>
                         <SelectTrigger>
                           <SelectValue placeholder="Select year" />
                         </SelectTrigger>
@@ -491,7 +491,7 @@ export function SmartRegistrationForm({
                     <Label htmlFor="experience">Experience Level</Label>
                     <Select
                       value={formData.experience}
-                      onValueChange={(value) => handleFieldChange("experience", value)}
+                      onValueChange={(value: string) => handleFieldChange("experience", value)}
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Select experience" />
@@ -586,7 +586,7 @@ export function SmartRegistrationForm({
                     <Checkbox
                       id="consent"
                       checked={formData.consent}
-                      onCheckedChange={(checked) => handleFieldChange("consent", checked)}
+                      onCheckedChange={(checked: boolean) => handleFieldChange("consent", checked)}
                     />
                     <Label htmlFor="consent" className="text-sm cursor-pointer">
                       I agree to the hackathon terms and conditions and understand that my data will be used for

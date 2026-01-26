@@ -47,6 +47,9 @@ export function middleware(request: NextRequest) {
   // Add Security Headers
   const headers = response.headers
 
+  // Performance headers
+  headers.set("X-DNS-Prefetch-Control", "on")
+  
   // Prevent clickjacking
   headers.set("X-Frame-Options", "DENY")
   

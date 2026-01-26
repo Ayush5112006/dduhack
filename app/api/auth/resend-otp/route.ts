@@ -1,14 +1,32 @@
+/**
+ * POST /api/auth/resend-otp
+ * Resends OTP to user's email
+ * 
+ * Request body:
+ * {
+ *   email: string
+ * }
+ * 
+ * Response:
+ * {
+ *   success: boolean
+ *   message: string
+ * }
+ */
+
 import { NextRequest, NextResponse } from "next/server"
-import { getPrismaClient } from "@/lib/prisma-multi-db"
-import { generateOTP, getOTPExpirationTime, sendOTPEmail } from "@/lib/otp"
+import { prisma } from "@/lib/prisma"
+import { generateOTP, getOTPExpirationTime } from "@/lib/otp-generator"
+import { sendOTPEmail } from "@/lib/email-service"
 
 export const runtime = "nodejs"
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { email, role } = body
+    const { email } = body
 
+    // Validation
     if (!email) {
       return NextResponse.json(
         { error: "Email is required" },
@@ -16,72 +34,98 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Get database for the selected role
-    const selectedRole = role || "participant"
-    const db = getPrismaClient(selectedRole)
-
-    // Find user by email
-    const user = await db.user.findUnique({
-      where: { email }
+    // Check if user exists
+    const user = await prisma.user.findUnique({
+      where: { email },
     })
 
     if (!user) {
+      // Don't reveal whether email exists (security best practice)
       return NextResponse.json(
-        { error: "User not found" },
-        { status: 404 }
+        {
+          success: true,
+          message:
+            "If this email is registered, an OTP will be sent shortly.",
+        },
+        { status: 200 }
       )
     }
 
     // Check if already verified
-    if (user.isVerified) {
+    if (user.emailVerified) {
       return NextResponse.json(
-        { error: "Email already verified" },
+        { error: "Email already verified. You can now login." },
         { status: 400 }
       )
     }
 
-    // Generate new OTP
-    const newOTP = generateOTP()
-    const otpExpiresAt = getOTPExpirationTime()
-
-    // Update user with new OTP
-    await db.user.update({
+    // Check existing OTP
+    const existingOTP = await prisma.emailOTP.findUnique({
       where: { email },
-      data: {
-        otp: newOTP,
-        otpExpiresAt,
-      }
     })
 
-    // Send new OTP email
-    try {
-      const result = await sendOTPEmail(email, user.name, newOTP)
-      if (!result.sent) {
-        const message = process.env.NODE_ENV !== "production"
-          ? `OTP email skipped (${result.skippedReason}). Here is your OTP: ${newOTP}`
-          : "Failed to send OTP email. Please try again."
+    // Rate limiting: Check if user has requested OTP multiple times recently
+    if (existingOTP && existingOTP.createdAt) {
+      const timeSinceCreation =
+        new Date().getTime() - new Date(existingOTP.createdAt).getTime()
+
+      // If last OTP was created less than 5 minutes ago, don't allow resend
+      if (timeSinceCreation < 5 * 60 * 1000) {
+        const remainingSeconds = Math.ceil(
+          (5 * 60 * 1000 - timeSinceCreation) / 1000
+        )
         return NextResponse.json(
-          { error: message, ...(process.env.NODE_ENV !== "production" ? { otp: newOTP } : {}) },
-          { status: 500 }
+          {
+            error: `Please wait ${remainingSeconds} seconds before requesting a new OTP.`,
+            retryAfter: remainingSeconds,
+          },
+          { status: 429 }
         )
       }
-    } catch (emailError) {
-      console.error("Failed to send OTP email:", emailError)
+    }
+
+    // Generate new OTP
+    const otp = generateOTP()
+    const expiresAt = getOTPExpirationTime(10) // 10 minutes
+
+    // Delete old OTP and create new one
+    await prisma.emailOTP.deleteMany({
+      where: { email },
+    })
+
+    await prisma.emailOTP.create({
+      data: {
+        email,
+        otp,
+        expiresAt,
+        attempts: 0,
+      },
+    })
+
+    // Send OTP email
+    await sendOTPEmail(email, otp, 10)
+
+    console.log(`✅ OTP resent to: ${email}`)
+
+    return NextResponse.json(
+      {
+        success: true,
+        message: "OTP sent to your email. Please check your inbox and spam folder.",
+      },
+      { status: 200 }
+    )
+  } catch (error) {
+    console.error("Resend OTP error:", error)
+
+    if (error instanceof SyntaxError) {
       return NextResponse.json(
-        { error: "Failed to send OTP email. Please try again." },
-        { status: 500 }
+        { error: "Invalid request body" },
+        { status: 400 }
       )
     }
 
-    return NextResponse.json({
-      success: true,
-      message: "OTP sent successfully to your email",
-      ...(process.env.NODE_ENV !== "production" ? { otp: newOTP } : {}),
-    })
-  } catch (error) {
-    console.error("Resend OTP error:", error)
     return NextResponse.json(
-      { error: "Failed to resend OTP" },
+      { error: "Failed to resend OTP. Please try again." },
       { status: 500 }
     )
   }

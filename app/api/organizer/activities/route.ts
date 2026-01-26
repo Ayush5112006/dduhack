@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
       },
     })
 
-    const hackathonIds = hackathons.map((h) => h.id)
+    const hackathonIds = hackathons.map((h: any) => h.id)
 
     // Get recent registrations for organizer's hackathons
     const registrations = await db.registration.findMany({
@@ -130,7 +130,7 @@ export async function GET(request: NextRequest) {
 
     // Combine and sort all activities
     const activities = [
-      ...registrations.map((r) => ({
+      ...registrations.map((r: any) => ({
         type: "registration",
         timestamp: r.createdAt,
         user: r.user,
@@ -138,7 +138,7 @@ export async function GET(request: NextRequest) {
         details: `Status: ${r.status}`,
         hackathonId: r.hackathonId,
       })),
-      ...submissions.map((s) => ({
+      ...submissions.map((s: any) => ({
         type: "submission",
         timestamp: s.createdAt,
         user: s.user,
@@ -146,7 +146,7 @@ export async function GET(request: NextRequest) {
         details: `Status: ${s.status}`,
         hackathonId: s.hackathonId,
       })),
-      ...teamMembers.map((tm) => ({
+      ...teamMembers.map((tm: any) => ({
         type: "team_action",
         timestamp: tm.createdAt,
         user: tm.user,

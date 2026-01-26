@@ -65,7 +65,7 @@ export async function GET(request: NextRequest) {
     })
 
     // Format response with stats
-    const formattedHackathons = hackathons.map((h) => {
+    const formattedHackathons = hackathons.map((h: any) => {
       const now = new Date()
       let computedStatus = "upcoming"
       if (now > h.endDate) computedStatus = "past"
@@ -84,9 +84,9 @@ export async function GET(request: NextRequest) {
         registrationCount: h.registrations.length,
         submissionCount: h.submissions.length,
         submissionStatus: {
-          pending: h.submissions.filter((s) => s.status === "pending").length,
-          approved: h.submissions.filter((s) => s.status === "approved").length,
-          rejected: h.submissions.filter((s) => s.status === "rejected").length,
+          pending: h.submissions.filter((s: any) => s.status === "pending").length,
+          approved: h.submissions.filter((s: any) => s.status === "approved").length,
+          rejected: h.submissions.filter((s: any) => s.status === "rejected").length,
         },
         createdAt: h.createdAt,
         updatedAt: h.updatedAt,
@@ -95,10 +95,10 @@ export async function GET(request: NextRequest) {
 
     // Calculate stats
     const totalHackathons = formattedHackathons.length
-    const totalRegistrations = formattedHackathons.reduce((sum, h) => sum + h.registrationCount, 0)
-    const totalSubmissions = formattedHackathons.reduce((sum, h) => sum + h.submissionCount, 0)
-    const activeHackathons = formattedHackathons.filter((h) => h.status === "live").length
-    const upcomingHackathons = formattedHackathons.filter((h) => h.status === "upcoming").length
+    const totalRegistrations = formattedHackathons.reduce((sum: number, h: any) => sum + h.registrationCount, 0)
+    const totalSubmissions = formattedHackathons.reduce((sum: number, h: any) => sum + h.submissionCount, 0)
+    const activeHackathons = formattedHackathons.filter((h: any) => h.status === "live").length
+    const upcomingHackathons = formattedHackathons.filter((h: any) => h.status === "upcoming").length
 
     return NextResponse.json({
       success: true,

@@ -329,7 +329,7 @@ export function AdminSubmissionManager({ hackathonId }: SubmissionManagerProps) 
                 <div className="space-y-4">
                   <div>
                     <label className="text-sm font-medium">Status</label>
-                    <Select value={newStatus} onValueChange={(value) => setNewStatus(value as Submission["status"])}>
+                    <Select value={newStatus} onValueChange={(value: string) => setNewStatus(value as Submission["status"])}>
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>

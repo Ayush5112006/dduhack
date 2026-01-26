@@ -147,7 +147,7 @@ export function AdvancedRegistrationForm({
         </CardHeader>
 
         <CardContent>
-          <Tabs defaultValue="individual" onValueChange={(v) => setMode(v as "individual" | "team")}>
+          <Tabs defaultValue="individual" onValueChange={(v: string) => setMode(v as "individual" | "team")}>
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="individual">Individual</TabsTrigger>
               <TabsTrigger value="team">Team</TabsTrigger>
@@ -397,7 +397,7 @@ export function AdvancedRegistrationForm({
                   <Checkbox
                     id="consent"
                     checked={consent}
-                    onCheckedChange={(checked) => setConsent(!!checked)}
+                    onCheckedChange={(checked: boolean) => setConsent(!!checked)}
                     className="mt-1"
                   />
                   <Label htmlFor="consent" className="cursor-pointer text-sm leading-relaxed">

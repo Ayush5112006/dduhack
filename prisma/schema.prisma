@@ -22,9 +22,9 @@ model User {
   status          String    @default("active") // active, suspended, pending
   avatar          String?
   bio             String?
-  isVerified      Boolean   @default(false) // Email verification status
-  otp             String?   // One-Time Password for verification
-  otpExpiresAt    DateTime? // OTP expiration time
+  emailVerified   Boolean   @default(false) // Email verification status
+  otp             String?   // Deprecated: use EmailOTP model instead
+  otpExpiresAt    DateTime? // Deprecated: use EmailOTP model instead
   
   // Relations
   profile         UserProfile?
@@ -390,4 +390,16 @@ model Notification {
   createdAt       DateTime  @default(now())
   
   @@index([userId, createdAt])
+}
+
+// EmailOTP model - tracks OTP for email verification
+model EmailOTP {
+  id              String    @id @default(cuid())
+  email           String    @unique
+  otp             String    // 6-digit OTP
+  expiresAt       DateTime  // OTP expiration time
+  attempts        Int       @default(0) // Track failed attempts
+  createdAt       DateTime  @default(now())
+  
+  @@index([email, expiresAt])
 }

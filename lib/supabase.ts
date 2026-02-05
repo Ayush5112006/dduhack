@@ -6,17 +6,43 @@ export const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 )
 
-// Create a supabase client with service role for admin operations
-export const supabaseAdmin = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    {
-        auth: {
-            autoRefreshToken: false,
-            persistSession: false
+// Lazy initialization of supabase admin client to avoid build-time errors
+// This ensures the client is only created at runtime when environment variables are available
+let _supabaseAdmin: ReturnType<typeof createClient> | null = null
+
+export const getSupabaseAdmin = () => {
+    if (!_supabaseAdmin) {
+        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+        const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+
+        if (!supabaseUrl || !serviceRoleKey) {
+            throw new Error(
+                'Missing Supabase environment variables. ' +
+                'Ensure NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are set.'
+            )
         }
+
+        _supabaseAdmin = createClient(
+            supabaseUrl,
+            serviceRoleKey,
+            {
+                auth: {
+                    autoRefreshToken: false,
+                    persistSession: false
+                }
+            }
+        )
     }
-)
+    return _supabaseAdmin
+}
+
+// Backward compatibility: export as supabaseAdmin (getter)
+export const supabaseAdmin = new Proxy({} as ReturnType<typeof createClient>, {
+    get: (target, prop) => {
+        const admin = getSupabaseAdmin()
+        return (admin as any)[prop]
+    }
+})
 
 // Type definitions for common database tables
 export interface User {

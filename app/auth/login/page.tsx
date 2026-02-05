@@ -49,7 +49,7 @@ export default function LoginPage() {
   // Update lockout timer
   React.useEffect(() => {
     if (!lockoutTime) return
-    
+
     const interval = setInterval(() => {
       if (Date.now() >= lockoutTime) {
         setLockoutTime(null)
@@ -64,20 +64,20 @@ export default function LoginPage() {
     const attemptsKey = 'login_attempts'
     const attempts = JSON.parse(localStorage.getItem(attemptsKey) || '[]')
     const now = Date.now()
-    
+
     // Filter out attempts older than 30 minutes
     const recentAttempts = attempts.filter((time: number) => now - time < LOCKOUT_DURATION)
     recentAttempts.push(now)
-    
+
     localStorage.setItem(attemptsKey, JSON.stringify(recentAttempts))
-    
+
     if (recentAttempts.length >= MAX_ATTEMPTS) {
       const lockUntil = now + LOCKOUT_DURATION
       localStorage.setItem(LOCKOUT_KEY, JSON.stringify({ until: lockUntil }))
       setLockoutTime(lockUntil)
       return true // locked out
     }
-    
+
     return false // not locked out
   }
 
@@ -95,16 +95,16 @@ export default function LoginPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     // Check if locked out
     if (lockoutTime && Date.now() < lockoutTime) {
       setErrorMessage(`Too many failed attempts. Try again in ${getRemainingLockoutTime()}`)
       return
     }
-    
+
     setIsLoading(true)
     setErrorMessage("")
-    
+
     try {
       const response = await fetch("/api/auth/login", {
         method: "POST",
@@ -120,10 +120,10 @@ export default function LoginPage() {
       if (response.ok) {
         const data = await response.json()
         const role = data?.user?.userRole || userRole
-        
+
         // Clear failed attempts on successful login
         clearFailedAttempts()
-        
+
         // Check if there's a stored redirect path
         const redirectAfterLogin = sessionStorage.getItem("redirectAfterLogin")
         if (redirectAfterLogin) {
@@ -131,18 +131,18 @@ export default function LoginPage() {
           window.location.href = redirectAfterLogin
         } else {
           // Default redirect based on role
-          const redirect = role === "admin" 
-            ? "/admin/dashboard" 
-            : role === "organizer" 
-            ? "/organizer/dashboard" 
-            : "/dashboard"
+          const redirect = role === "admin"
+            ? "/admin/dashboard"
+            : role === "organizer"
+              ? "/organizer/dashboard"
+              : "/dashboard"
           window.location.href = redirect
         }
       } else {
         const error = await response.json()
         const errorMsg = error.error || "Login failed"
         setErrorMessage(errorMsg)
-        
+
         // Record failed attempt and check for lockout
         const isLockedOut = recordFailedAttempt()
         if (isLockedOut) {
@@ -159,26 +159,53 @@ export default function LoginPage() {
 
   const handleGoogleLogin = async () => {
     setIsLoading(true)
+
     try {
-      // Google OAuth URL - replace with your actual Google OAuth client ID
-      const googleAuthUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
-        `client_id=YOUR_GOOGLE_CLIENT_ID&` +
-        `redirect_uri=${window.location.origin}/auth/callback/google&` +
-        `response_type=code&` +
-        `scope=email profile&` +
-        `access_type=offline&` +
-        `prompt=consent`
-      
-      // For demo purposes, simulate OAuth flow
-      alert("Google OAuth would open here. For production, configure Google OAuth credentials in Google Cloud Console.")
-      console.log("Google Auth URL:", googleAuthUrl)
-      
-      // Simulate successful login
-      await new Promise((resolve) => setTimeout(resolve, 1000))
-      window.location.href = "/dashboard"
+      const googleClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID
+
+      // Check if OAuth is configured
+      if (!googleClientId || googleClientId === "YOUR_GOOGLE_CLIENT_ID") {
+        // Demo mode - simulate OAuth login
+        const response = await fetch("/api/auth/oauth-demo", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({
+            provider: "google",
+            user: {
+              email: "demo.google@example.com",
+              name: "Google Demo User"
+            },
+            role: userRole
+          }),
+        })
+
+        if (response.ok) {
+          const redirect = userRole === "admin"
+            ? "/admin/dashboard"
+            : userRole === "organizer"
+              ? "/organizer/dashboard"
+              : "/dashboard"
+          window.location.href = redirect
+        } else {
+          setErrorMessage("Demo login failed. Please try again.")
+        }
+      } else {
+        // Real OAuth mode
+        const redirectUri = `${window.location.origin}/auth/callback/google`
+        const googleAuthUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
+          `client_id=${googleClientId}&` +
+          `redirect_uri=${encodeURIComponent(redirectUri)}&` +
+          `response_type=code&` +
+          `scope=${encodeURIComponent("email profile")}&` +
+          `access_type=offline&` +
+          `prompt=consent`
+
+        window.location.href = googleAuthUrl
+      }
     } catch (error) {
       console.error("Google login error:", error)
-      alert("Google login failed. Please try again.")
+      setErrorMessage("Login failed. Please try again.")
     } finally {
       setIsLoading(false)
     }
@@ -186,23 +213,51 @@ export default function LoginPage() {
 
   const handleGithubLogin = async () => {
     setIsLoading(true)
+
     try {
-      // GitHub OAuth URL - replace with your actual GitHub OAuth client ID
-      const githubAuthUrl = `https://github.com/login/oauth/authorize?` +
-        `client_id=YOUR_GITHUB_CLIENT_ID&` +
-        `redirect_uri=${window.location.origin}/auth/callback/github&` +
-        `scope=user:email read:user`
-      
-      // For demo purposes, simulate OAuth flow
-      alert("GitHub OAuth would open here. For production, register an OAuth app at github.com/settings/developers.")
-      console.log("GitHub Auth URL:", githubAuthUrl)
-      
-      // Simulate successful login
-      await new Promise((resolve) => setTimeout(resolve, 1000))
-      window.location.href = "/dashboard"
+      const githubClientId = process.env.NEXT_PUBLIC_GITHUB_CLIENT_ID
+
+      // Check if OAuth is configured
+      if (!githubClientId || githubClientId === "YOUR_GITHUB_CLIENT_ID") {
+        // Demo mode - simulate OAuth login
+        const response = await fetch("/api/auth/oauth-demo", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({
+            provider: "github",
+            user: {
+              email: "demo.github@example.com",
+              name: "GitHub Demo User",
+              github: "https://github.com/demo-user"
+            },
+            role: userRole
+          }),
+        })
+
+        if (response.ok) {
+          const redirect = userRole === "admin"
+            ? "/admin/dashboard"
+            : userRole === "organizer"
+              ? "/organizer/dashboard"
+              : "/dashboard"
+          window.location.href = redirect
+        } else {
+          setErrorMessage("Demo login failed. Please try again.")
+        }
+      } else {
+        // Real OAuth mode
+        const redirectUri = `${window.location.origin}/auth/callback/github`
+        const githubAuthUrl = `https://github.com/login/oauth/authorize?` +
+          `client_id=${githubClientId}&` +
+          `redirect_uri=${encodeURIComponent(redirectUri)}&` +
+          `scope=${encodeURIComponent("user:email read:user")}`
+
+        window.location.href = githubAuthUrl
+      }
     } catch (error) {
       console.error("GitHub login error:", error)
-      alert("GitHub login failed. Please try again.")
+      setErrorMessage("Login failed. Please try again.")
     } finally {
       setIsLoading(false)
     }
@@ -217,7 +272,7 @@ export default function LoginPage() {
           </Link>
           <div>
             <blockquote className="text-lg text-muted-foreground">
-              &ldquo;HackHub helped me discover amazing hackathons and connect with talented developers 
+              &ldquo;HackHub helped me discover amazing hackathons and connect with talented developers
               from around the world. I&apos;ve won 3 hackathons so far!&rdquo;
             </blockquote>
             <div className="mt-4">
@@ -249,9 +304,9 @@ export default function LoginPage() {
             <CardContent>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="grid gap-4 sm:grid-cols-2">
-                  <Button 
-                    variant="outline" 
-                    type="button" 
+                  <Button
+                    variant="outline"
+                    type="button"
                     className="gap-2 bg-transparent"
                     onClick={handleGithubLogin}
                     disabled={isLoading}
@@ -259,9 +314,9 @@ export default function LoginPage() {
                     <Github className="h-4 w-4" />
                     GitHub
                   </Button>
-                  <Button 
-                    variant="outline" 
-                    type="button" 
+                  <Button
+                    variant="outline"
+                    type="button"
                     className="gap-2 bg-transparent"
                     onClick={handleGoogleLogin}
                     disabled={isLoading}
@@ -300,8 +355,9 @@ export default function LoginPage() {
                       <SelectValue placeholder="Select your role" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="participant">Participant / Student</SelectItem>
+                      <SelectItem value="participant">Participant / Developer</SelectItem>
                       <SelectItem value="organizer">Organizer</SelectItem>
+                      <SelectItem value="mentor">Mentor</SelectItem>
                       <SelectItem value="admin">Admin</SelectItem>
                     </SelectContent>
                   </Select>
@@ -349,11 +405,11 @@ export default function LoginPage() {
                 )}
 
                 <Button type="submit" className="w-full" disabled={isLoading || !!lockoutTime}>
-                  {lockoutTime 
-                    ? `Locked (${getRemainingLockoutTime()} remaining)` 
-                    : isLoading 
-                    ? "Signing in..." 
-                    : "Sign in"}
+                  {lockoutTime
+                    ? `Locked (${getRemainingLockoutTime()} remaining)`
+                    : isLoading
+                      ? "Signing in..."
+                      : "Sign in"}
                 </Button>
               </form>
 

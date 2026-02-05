@@ -1,5 +1,5 @@
 import dynamicImport from "next/dynamic"
-import { Navbar } from "@/components/navbar"
+
 import { Footer } from "@/components/footer"
 import { LazySection } from "@/components/home/lazy-section"
 
@@ -57,8 +57,8 @@ function SectionSkeleton({ height = "md" }: { height?: "md" | "lg" }) {
 export default function HomePage() {
   return (
     <div className="min-h-screen bg-background">
-      <Navbar />
-      <main>
+      {/* Navbar handled by MainLayout */}
+      <div className="flex-1 w-full">
         <HeroSection />
         <LazySection fallback={<SectionSkeleton />}>
           <FeaturedHackathons />
@@ -78,7 +78,7 @@ export default function HomePage() {
         <LazySection fallback={<SectionSkeleton />} rootMargin="200px">
           <CTASection />
         </LazySection>
-      </main>
+      </div>
       <Footer />
     </div>
   )

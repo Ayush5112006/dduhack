@@ -178,16 +178,16 @@ export default function HackathonsPage() {
                               hackathon.status === "live"
                                 ? "default"
                                 : hackathon.status === "upcoming"
-                                ? "secondary"
-                                : "outline"
+                                  ? "secondary"
+                                  : "outline"
                             }
                           >
                             {hackathon.status}
                           </Badge>
                         </TableCell>
-                        <TableCell>{hackathon.startDate ? new Date(hackathon.startDate).toLocaleDateString() : "N/A"}</TableCell>
+                        <TableCell>{hackathon.startDate ? new Date(hackathon.startDate).toLocaleDateString('en-US') : "N/A"}</TableCell>
                         <TableCell>{hackathon.registrations || 0}</TableCell>
-                        <TableCell>${(hackathon.prizeAmount || 0).toLocaleString()}</TableCell>
+                        <TableCell>${(hackathon.prizeAmount || 0).toLocaleString('en-US')}</TableCell>
                         <TableCell className="text-right">
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>

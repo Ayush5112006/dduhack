@@ -67,7 +67,8 @@ function serializeHackathon(h: any) {
   }
 }
 
-export async function GET(request: Request, { params }: { params: { id: string } }) {
+export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
   const session = await getSession()
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
@@ -80,7 +81,7 @@ export async function GET(request: Request, { params }: { params: { id: string }
 
   try {
     const hackathon = await db.hackathon.findFirst({
-      where: { id: params.id, ownerId: session.userId },
+      where: { id, ownerId: session.userId },
       include: {
         _count: { select: { registrations: true, submissions: true, teams: true } },
       },
@@ -97,7 +98,8 @@ export async function GET(request: Request, { params }: { params: { id: string }
   }
 }
 
-export async function PUT(request: Request, { params }: { params: { id: string } }) {
+export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
   const session = await getSession()
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
@@ -139,20 +141,20 @@ export async function PUT(request: Request, { params }: { params: { id: string }
   }
 
   try {
-    const existing = await db.hackathon.findFirst({ where: { id: params.id, ownerId: session.userId } })
+    const existing = await db.hackathon.findFirst({ where: { id, ownerId: session.userId } })
     if (!existing) {
       return NextResponse.json({ error: "Hackathon not found" }, { status: 404 })
     }
 
     const updated = await db.hackathon.update({
-      where: { id: params.id },
+      where: { id },
       data: {
         title: data.title,
         description: data.description || null,
         category: data.category,
         mode: data.mode,
         difficulty: data.difficulty,
-        prize: data.prize || (data.prizeAmount ? `$${data.prizeAmount.toLocaleString()}` : null),
+        prize: data.prize || (data.prizeAmount ? `$${data.prizeAmount.toLocaleString('en-US')}` : null),
         prizeAmount: data.prizeAmount ?? 0,
         location: data.location || null,
         startDate,
@@ -177,7 +179,8 @@ export async function PUT(request: Request, { params }: { params: { id: string }
   }
 }
 
-export async function DELETE(request: Request, { params }: { params: { id: string } }) {
+export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
   const session = await getSession()
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
@@ -189,12 +192,12 @@ export async function DELETE(request: Request, { params }: { params: { id: strin
   const db = getPrismaClient("organizer")
 
   try {
-    const existing = await db.hackathon.findFirst({ where: { id: params.id, ownerId: session.userId } })
+    const existing = await db.hackathon.findFirst({ where: { id, ownerId: session.userId } })
     if (!existing) {
       return NextResponse.json({ error: "Hackathon not found" }, { status: 404 })
     }
 
-    await db.hackathon.delete({ where: { id: params.id } })
+    await db.hackathon.delete({ where: { id } })
 
     return NextResponse.json({ success: true }, { status: 200 })
   } catch (error) {

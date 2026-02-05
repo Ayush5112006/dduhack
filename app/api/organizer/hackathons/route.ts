@@ -162,7 +162,7 @@ export async function POST(request: Request) {
         category: data.category,
         mode: data.mode,
         difficulty: data.difficulty,
-        prize: data.prize || (data.prizeAmount ? `$${data.prizeAmount.toLocaleString()}` : null),
+        prize: data.prize || (data.prizeAmount ? `$${data.prizeAmount.toLocaleString('en-US')}` : null),
         prizeAmount: data.prizeAmount ?? 0,
         location: data.location || null,
         startDate,

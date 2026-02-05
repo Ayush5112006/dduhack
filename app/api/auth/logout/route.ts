@@ -1,10 +1,9 @@
 import { NextRequest, NextResponse } from "next/server"
-import { destroySession } from "@/lib/session"
+import { destroySecureSession } from "@/lib/secure-session"
 
 export async function POST(request: NextRequest) {
   try {
-    await destroySession()
-
+    await destroySecureSession()
     return NextResponse.json({ message: "Logged out successfully" })
   } catch (error) {
     console.error("Logout error:", error)

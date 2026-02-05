@@ -91,7 +91,7 @@ export default function OrganizerActivitiesPage() {
     if (diffHours < 24) return `${diffHours}h ago`
     if (diffDays < 7) return `${diffDays}d ago`
 
-    return date.toLocaleDateString()
+    return date.toLocaleDateString('en-US')
   }
 
   const registrationCount = activities.filter((a) => a.type === "registration").length
@@ -111,186 +111,186 @@ export default function OrganizerActivitiesPage() {
             </div>
           </div>
 
-      {/* Stats Cards */}
-      <div className="grid gap-4 md:grid-cols-4">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">My Hackathons</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{hackathonCount}</div>
-            <p className="text-xs text-muted-foreground mt-1">Organizer events</p>
-          </CardContent>
-        </Card>
+          {/* Stats Cards */}
+          <div className="grid gap-4 md:grid-cols-4">
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground">My Hackathons</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{hackathonCount}</div>
+                <p className="text-xs text-muted-foreground mt-1">Organizer events</p>
+              </CardContent>
+            </Card>
 
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Registrations</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{registrationCount}</div>
-            <p className="text-xs text-muted-foreground mt-1">Participant signups</p>
-          </CardContent>
-        </Card>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground">Registrations</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{registrationCount}</div>
+                <p className="text-xs text-muted-foreground mt-1">Participant signups</p>
+              </CardContent>
+            </Card>
 
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Submissions</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{submissionCount}</div>
-            <p className="text-xs text-muted-foreground mt-1">Project submissions</p>
-          </CardContent>
-        </Card>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground">Submissions</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{submissionCount}</div>
+                <p className="text-xs text-muted-foreground mt-1">Project submissions</p>
+              </CardContent>
+            </Card>
 
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Teams</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{teamActionCount}</div>
-            <p className="text-xs text-muted-foreground mt-1">Team formations</p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Controls */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle>Activity Feed</CardTitle>
-              <CardDescription>All activities from your hackathons</CardDescription>
-            </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={fetchActivities}
-              disabled={loading}
-              className="gap-2"
-            >
-              <RefreshCw className="h-4 w-4" />
-              Refresh
-            </Button>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground">Teams</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{teamActionCount}</div>
+                <p className="text-xs text-muted-foreground mt-1">Team formations</p>
+              </CardContent>
+            </Card>
           </div>
-        </CardHeader>
-      </Card>
 
-      {/* Activities List */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Recent Activities</CardTitle>
-          <CardDescription>Showing {activities.length} activities from all your hackathons</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {error && (
-            <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded mb-4">
-              {error}
-            </div>
-          )}
-
-          {loading ? (
-            <div className="flex items-center justify-center py-8">
-              <div className="text-muted-foreground">Loading activities...</div>
-            </div>
-          ) : activities.length === 0 ? (
-            <div className="flex items-center justify-center py-8">
-              <div className="text-center">
-                <Trophy className="h-12 w-12 text-muted-foreground mx-auto mb-2 opacity-50" />
-                <div className="text-muted-foreground">No activities yet</div>
-                <p className="text-sm text-muted-foreground mt-1">
-                  Activities will appear here once participants register or submit
-                </p>
+          {/* Controls */}
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>Activity Feed</CardTitle>
+                  <CardDescription>All activities from your hackathons</CardDescription>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={fetchActivities}
+                  disabled={loading}
+                  className="gap-2"
+                >
+                  <RefreshCw className="h-4 w-4" />
+                  Refresh
+                </Button>
               </div>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {activities.map((activity, idx) => {
-                const IconComponent = TYPE_ICONS[activity.type] || BookOpen
-                const typeColor = TYPE_COLORS[activity.type] || "bg-gray-50 border-gray-200"
-                const badgeColor = BADGE_COLORS[activity.type] || "bg-gray-100 text-gray-800"
+            </CardHeader>
+          </Card>
 
-                return (
-                  <div key={idx} className={`border rounded-lg p-4 ${typeColor} transition-colors hover:shadow-sm`}>
-                    <div className="flex items-start gap-4">
-                      {/* Icon */}
-                      <div className="mt-1">
-                        <IconComponent className="h-5 w-5 text-muted-foreground" />
-                      </div>
+          {/* Activities List */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Recent Activities</CardTitle>
+              <CardDescription>Showing {activities.length} activities from all your hackathons</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {error && (
+                <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded mb-4">
+                  {error}
+                </div>
+              )}
 
-                      {/* Content */}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <Badge className={badgeColor}>{activity.type.replace("_", " ")}</Badge>
-
-                          {activity.user && (
-                            <>
-                              <span className="font-medium text-sm">{activity.user.name}</span>
-                              <span className="text-xs text-muted-foreground">({activity.user.email})</span>
-                              <ArrowRight className="h-3 w-3 text-muted-foreground" />
-                            </>
-                          )}
-
-                          <span className="text-sm text-muted-foreground">{activity.action}</span>
-                        </div>
-
-                        {activity.details && (
-                          <p className="text-xs text-muted-foreground mt-1">{activity.details}</p>
-                        )}
-                      </div>
-
-                      {/* Timestamp */}
-                      <div className="flex items-center gap-1 text-xs text-muted-foreground whitespace-nowrap">
-                        <Clock className="h-3 w-3" />
-                        {formatDate(activity.timestamp)}
-                      </div>
-                    </div>
+              {loading ? (
+                <div className="flex items-center justify-center py-8">
+                  <div className="text-muted-foreground">Loading activities...</div>
+                </div>
+              ) : activities.length === 0 ? (
+                <div className="flex items-center justify-center py-8">
+                  <div className="text-center">
+                    <Trophy className="h-12 w-12 text-muted-foreground mx-auto mb-2 opacity-50" />
+                    <div className="text-muted-foreground">No activities yet</div>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Activities will appear here once participants register or submit
+                    </p>
                   </div>
-                )
-              })}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {activities.map((activity, idx) => {
+                    const IconComponent = TYPE_ICONS[activity.type] || BookOpen
+                    const typeColor = TYPE_COLORS[activity.type] || "bg-gray-50 border-gray-200"
+                    const badgeColor = BADGE_COLORS[activity.type] || "bg-gray-100 text-gray-800"
 
-      {/* Quick Stats */}
-      <div className="grid gap-4 md:grid-cols-3">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-sm font-medium">Top Activity Type</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {registrationCount > submissionCount && registrationCount > teamActionCount
-                ? "Registrations"
-                : submissionCount > teamActionCount
-                  ? "Submissions"
-                  : "Team Formations"}
-            </div>
-          </CardContent>
-        </Card>
+                    return (
+                      <div key={idx} className={`border rounded-lg p-4 ${typeColor} transition-colors hover:shadow-sm`}>
+                        <div className="flex items-start gap-4">
+                          {/* Icon */}
+                          <div className="mt-1">
+                            <IconComponent className="h-5 w-5 text-muted-foreground" />
+                          </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-sm font-medium">Avg per Activity Type</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {activities.length > 0 ? Math.round(activities.length / 3) : 0}
-            </div>
-          </CardContent>
-        </Card>
+                          {/* Content */}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <Badge className={badgeColor}>{activity.type.replace("_", " ")}</Badge>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-sm font-medium">Total Engagement</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{activities.length}</div>
-            <p className="text-xs text-muted-foreground mt-1">Across all hackathons</p>
-          </CardContent>
-        </Card>
-      </div>
+                              {activity.user && (
+                                <>
+                                  <span className="font-medium text-sm">{activity.user.name}</span>
+                                  <span className="text-xs text-muted-foreground">({activity.user.email})</span>
+                                  <ArrowRight className="h-3 w-3 text-muted-foreground" />
+                                </>
+                              )}
+
+                              <span className="text-sm text-muted-foreground">{activity.action}</span>
+                            </div>
+
+                            {activity.details && (
+                              <p className="text-xs text-muted-foreground mt-1">{activity.details}</p>
+                            )}
+                          </div>
+
+                          {/* Timestamp */}
+                          <div className="flex items-center gap-1 text-xs text-muted-foreground whitespace-nowrap">
+                            <Clock className="h-3 w-3" />
+                            {formatDate(activity.timestamp)}
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Quick Stats */}
+          <div className="grid gap-4 md:grid-cols-3">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-sm font-medium">Top Activity Type</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  {registrationCount > submissionCount && registrationCount > teamActionCount
+                    ? "Registrations"
+                    : submissionCount > teamActionCount
+                      ? "Submissions"
+                      : "Team Formations"}
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-sm font-medium">Avg per Activity Type</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  {activities.length > 0 ? Math.round(activities.length / 3) : 0}
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-sm font-medium">Total Engagement</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{activities.length}</div>
+                <p className="text-xs text-muted-foreground mt-1">Across all hackathons</p>
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </main>
     </div>

@@ -1,4 +1,4 @@
-import { Navbar } from "@/components/navbar"
+
 import { Footer } from "@/components/footer"
 import { PublicHackathon } from "@/components/public/hackathon-card"
 import { HackathonList } from "@/components/public/hackathon-list"
@@ -19,7 +19,7 @@ async function getPublicHackathons(): Promise<PublicHackathon[]> {
       },
     })
 
-    const computeStatus = (startDate: Date, endDate: Date): string => {
+    const computeStatus = (startDate: Date, endDate: Date): "upcoming" | "live" | "past" => {
       const now = new Date()
       if (now < startDate) return "upcoming"
       if (now > endDate) return "past"
@@ -72,18 +72,18 @@ export default async function HackathonsPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <Navbar />
-      <main className="mx-auto max-w-7xl px-4 py-12 lg:px-8">
-        <div className="mb-8 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">Public Hackathons</p>
-            <h1 className="text-3xl font-bold text-foreground">Browse live & upcoming events</h1>
-            <p className="mt-2 text-muted-foreground">
-              Only hackathons created by verified organizers are shown. No login required.
+      {/* Navbar handled by MainLayout */}
+      <main className="mx-auto w-full max-w-7xl px-3 py-8 sm:px-4 sm:py-12 lg:px-8">
+        <div className="mb-6 sm:mb-8 flex flex-col gap-3 sm:gap-4">
+          <div className="space-y-2">
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">🚀 Public Hackathons</p>
+            <h1 className="mt-2 text-2xl sm:text-3xl lg:text-4xl font-bold text-foreground">Discover & Participate</h1>
+            <p className="mt-2 text-sm sm:text-base text-muted-foreground max-w-2xl">
+              Browse verified hackathons and register to start your competitive journey
             </p>
           </div>
-          <div className="rounded-xl border border-border/70 bg-muted/40 px-4 py-3 text-sm text-muted-foreground">
-            Showing {hackathons.length} event{hackathons.length === 1 ? "" : "s"}
+          <div className="rounded-lg border border-border/50 bg-secondary/30 backdrop-blur px-3 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm text-muted-foreground w-fit font-medium">
+            📊 {hackathons.length} event{hackathons.length === 1 ? "" : "s"} available
           </div>
         </div>
 

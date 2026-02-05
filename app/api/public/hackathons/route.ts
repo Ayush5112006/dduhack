@@ -84,43 +84,41 @@ export async function GET(request: NextRequest) {
     }> = []
 
     try {
-      // Use raw SQL to avoid schema drift issues (e.g., missing allowTeams column in old DBs).
-      hackathons = await prisma.$queryRaw<Array<{
-        id: string
-        title: string
-        description: string | null
-        category: string
-        mode: string
-        difficulty: string
-        prizeAmount: number
-        startDate: string
-        endDate: string
-        registrationDeadline: string
-        banner: string | null
-        problemStatementPdf: string | null
-        status: string
-        registrations: number
-        teams: number
-      }>>`SELECT
-        h.id,
-        h.title,
-        h.description,
-        h.category,
-        h.mode,
-        h.difficulty,
-        h.prizeAmount,
-        h.startDate,
-        h.endDate,
-        h.registrationDeadline,
-        h.banner,
-        h.problemStatementPdf,
-        h.status,
-        (SELECT COUNT(*) FROM Registration r WHERE r.hackathonId = h.id) as registrations,
-        (SELECT COUNT(*) FROM Team t WHERE t.hackathonId = h.id) as teams
-      FROM Hackathon h
-      WHERE h.status != 'draft'
-        AND h.ownerId IN (SELECT u.id FROM User u WHERE u.role IN ('ORGANIZER', 'organizer'))
-      ORDER BY h.startDate ASC;`
+      // Use Prisma to fetch hackathons with proper type safety
+      const dbHackathons = await prisma.hackathon.findMany({
+        where: {
+          status: { not: "draft" },
+        },
+        include: {
+          registrations: {
+            select: { id: true },
+          },
+          teams: {
+            select: { id: true },
+          },
+        },
+        orderBy: {
+          startDate: "asc",
+        },
+      })
+
+      hackathons = dbHackathons.map((h) => ({
+        id: h.id,
+        title: h.title,
+        description: h.description,
+        category: h.category,
+        mode: h.mode,
+        difficulty: h.difficulty,
+        prizeAmount: h.prizeAmount,
+        startDate: h.startDate.toISOString(),
+        endDate: h.endDate.toISOString(),
+        registrationDeadline: h.registrationDeadline.toISOString(),
+        banner: h.banner,
+        problemStatementPdf: h.problemStatementPdf,
+        status: h.status,
+        registrations: h.registrations.length,
+        teams: h.teams.length,
+      }))
     } catch (err: any) {
       console.error("Failed to fetch public hackathons (fallback to empty)", err?.message || err)
       hackathons = []
@@ -138,15 +136,15 @@ export async function GET(request: NextRequest) {
         mode: hackathon.mode,
         difficulty: hackathon.difficulty,
         prizeAmount: hackathon.prizeAmount,
-        startDate: hackathon.startDate.toISOString(),
-        endDate: hackathon.endDate.toISOString(),
-        registrationDeadline: hackathon.registrationDeadline.toISOString(),
+        startDate: hackathon.startDate,
+        endDate: hackathon.endDate,
+        registrationDeadline: hackathon.registrationDeadline,
         banner: hackathon.banner,
         problemStatementPdf: hackathon.problemStatementPdf,
         status: computeStatus(startDate, endDate),
         counts: {
-          registrations: hackathon._count.registrations,
-          teams: hackathon._count.teams,
+          registrations: hackathon.registrations,
+          teams: hackathon.teams,
         },
       }
     })

@@ -10,15 +10,22 @@ if (!databaseUrl) {
   throw new Error('DATABASE_URL is missing. Set it in your environment for Prisma to connect.')
 }
 
+// Add connection parameters for better pooling
+const connectionUrl = new URL(databaseUrl)
+connectionUrl.searchParams.set('sslmode', 'require')
+connectionUrl.searchParams.set('connect_timeout', '10')
+connectionUrl.searchParams.set('statement_cache_size', '20')
+
 const prismaClient =
   globalForPrisma.prisma ??
   new PrismaClient({
     datasources: {
       db: {
-        url: databaseUrl,
+        url: connectionUrl.toString(),
       },
     },
     log: process.env.NODE_ENV === 'development' ? ['warn', 'error'] : ['error'],
+    errorFormat: 'pretty',
   })
 
 if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prismaClient

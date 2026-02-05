@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { cn } from "@/lib/utils"
 
 interface Submission {
   id: string
@@ -60,11 +61,11 @@ export function UserSubmissionDashboard() {
   }
 
   const statusColors: Record<Submission["status"], string> = {
-    submitted: "bg-blue-100 text-blue-800",
-    reviewing: "bg-yellow-100 text-yellow-800",
-    shortlisted: "bg-purple-100 text-purple-800",
-    won: "bg-green-100 text-green-800",
-    rejected: "bg-red-100 text-red-800",
+    submitted: "bg-blue-500/10 text-blue-400 border-blue-500/20",
+    reviewing: "bg-yellow-500/10 text-yellow-400 border-yellow-500/20",
+    shortlisted: "bg-purple-500/10 text-purple-400 border-purple-500/20",
+    won: "bg-green-500/10 text-green-400 border-green-500/20",
+    rejected: "bg-red-500/10 text-red-400 border-red-500/20",
   }
 
   const statusSteps = [
@@ -75,20 +76,20 @@ export function UserSubmissionDashboard() {
   ]
 
   if (loading) {
-    return <div className="text-center py-8">Loading submissions...</div>
+    return <div className="text-center py-8 text-muted-foreground">Loading submissions...</div>
   }
 
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-bold mb-2">My Submissions</h2>
-        <p className="text-gray-600">Track your hackathon submissions and their status</p>
+        <h2 className="text-2xl font-bold mb-2 text-foreground">My Submissions</h2>
+        <p className="text-muted-foreground">Track your hackathon submissions and their status</p>
       </div>
 
       {submissions.length === 0 ? (
-        <Card>
+        <Card className="glass-card">
           <CardContent className="text-center py-8">
-            <p className="text-gray-500">No submissions yet</p>
+            <p className="text-muted-foreground">No submissions yet</p>
           </CardContent>
         </Card>
       ) : (
@@ -100,16 +101,16 @@ export function UserSubmissionDashboard() {
             )
 
             return (
-              <Card key={submission.id}>
+              <Card key={submission.id} className="glass-card hover:border-primary/30">
                 <CardHeader className="pb-3">
                   <div className="flex justify-between items-start">
                     <div>
-                      <CardTitle className="text-lg">{submission.title}</CardTitle>
-                      <p className="text-sm text-gray-600 mt-1">
+                      <CardTitle className="text-lg text-foreground">{submission.title}</CardTitle>
+                      <p className="text-sm text-muted-foreground mt-1">
                         Submitted on {new Date(submission.createdAt).toISOString().split('T')[0]}
                       </p>
                     </div>
-                    <Badge className={statusColors[submission.status]}>
+                    <Badge className={cn("border", statusColors[submission.status])}>
                       {submission.status}
                     </Badge>
                   </div>
@@ -121,19 +122,17 @@ export function UserSubmissionDashboard() {
                     {statusSteps.map((step, index) => (
                       <div key={step.key} className="flex items-center">
                         <div
-                          className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold ${
-                            index <= currentStepIndex
-                              ? "bg-blue-600 text-white"
-                              : "bg-gray-200 text-gray-600"
-                          }`}
+                          className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold border ${index <= currentStepIndex
+                            ? "bg-primary text-primary-foreground border-primary"
+                            : "bg-secondary text-muted-foreground border-border"
+                            }`}
                         >
                           {index + 1}
                         </div>
                         {index < statusSteps.length - 1 && (
                           <div
-                            className={`flex-1 h-1 mx-2 ${
-                              index < currentStepIndex ? "bg-blue-600" : "bg-gray-200"
-                            }`}
+                            className={`flex-1 h-1 mx-2 rounded-full ${index < currentStepIndex ? "bg-primary" : "bg-secondary"
+                              }`}
                           />
                         )}
                       </div>
@@ -142,10 +141,10 @@ export function UserSubmissionDashboard() {
 
                   {/* Score Display */}
                   {submission.score > 0 && (
-                    <div className="bg-gray-50 p-3 rounded">
+                    <div className="bg-secondary/30 p-3 rounded-lg border border-border/50">
                       <div className="flex justify-between items-center">
-                        <span className="font-medium">Score</span>
-                        <span className="text-2xl font-bold text-blue-600">
+                        <span className="font-medium text-foreground">Score</span>
+                        <span className="text-2xl font-bold text-primary">
                           {submission.score}/100
                         </span>
                       </div>
@@ -154,9 +153,9 @@ export function UserSubmissionDashboard() {
 
                   {/* Feedback */}
                   {submission.feedback && (
-                    <div className="bg-blue-50 p-3 rounded border border-blue-200">
-                      <p className="text-sm font-medium text-blue-900 mb-1">Feedback</p>
-                      <p className="text-sm text-blue-800">{submission.feedback}</p>
+                    <div className="bg-blue-500/5 p-3 rounded-lg border border-blue-500/20">
+                      <p className="text-sm font-medium text-blue-400 mb-1">Feedback</p>
+                      <p className="text-sm text-blue-200/80">{submission.feedback}</p>
                     </div>
                   )}
 

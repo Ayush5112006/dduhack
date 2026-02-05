@@ -72,17 +72,17 @@ export function SmartRegistrationForm({
   const [registeredHackathons, setRegisteredHackathons] = useState<number>(0)
 
   const [formData, setFormData] = useState<RegistrationFormData>({
-    fullName: userProfile?.name || "",
-    email: userProfile?.email || "",
-    phone: userProfile?.phone || "",
-    university: userProfile?.university || "",
+    fullName: "",
+    email: "",
+    phone: "",
+    university: "",
     enrollmentNumber: "",
     branch: "",
     year: "",
-    skills: userProfile?.skills || [],
+    skills: [],
     experience: "",
-    githubProfile: userProfile?.githubProfile || "",
-    linkedinProfile: userProfile?.linkedinProfile || "",
+    githubProfile: "",
+    linkedinProfile: "",
     portfolioUrl: "",
     projectIdea: "",
     motivation: "",
@@ -90,7 +90,45 @@ export function SmartRegistrationForm({
     consent: false,
   })
 
-  // Calculate smart suggestions
+  // Reset form when dialog opens
+  useEffect(() => {
+    if (open) {
+      setCurrentStep("mode")
+      setFormData({
+        fullName: "",
+        email: userProfile?.email || "",
+        phone: "",
+        university: "",
+        enrollmentNumber: "",
+        branch: "",
+        year: "",
+        skills: [],
+        experience: "",
+        githubProfile: "",
+        linkedinProfile: "",
+        portfolioUrl: "",
+        projectIdea: "",
+        motivation: "",
+        mode: "individual",
+        consent: false,
+        teamMembers: [],
+      })
+    }
+  }, [open])
+
+  // Auto-scroll to consent checkbox when reaching review step
+  useEffect(() => {
+    if (currentStep === "review") {
+      // Use a small timeout to let the DOM render first
+      setTimeout(() => {
+        const consentCheckbox = document.getElementById("consent")
+        if (consentCheckbox) {
+          consentCheckbox.scrollIntoView({ behavior: "smooth", block: "center" })
+        }
+      }, 100)
+    }
+  }, [currentStep])
+
   const suggestions = useMemo((): SmartSuggestion[] => {
     const sugg: SmartSuggestion[] = []
 
@@ -144,10 +182,12 @@ export function SmartRegistrationForm({
       formData.email,
       formData.phone,
       formData.university,
+      formData.enrollmentNumber,
       formData.skills.length > 0,
       formData.projectIdea,
       formData.motivation,
       formData.consent,
+      // Note: mode is NOT counted in completion percentage so it starts at 0%
     ]
     return Math.round((fields.filter(Boolean).length / fields.length) * 100)
   }, [formData])
@@ -182,11 +222,11 @@ export function SmartRegistrationForm({
       case "mode":
         return !!formData.mode
       case "personal":
-        return !!(formData.fullName && formData.email && formData.phone && formData.university)
+        return !!(formData.fullName && formData.email && formData.phone && formData.university && formData.enrollmentNumber)
       case "skills":
         return formData.skills.length > 0 && !!formData.projectIdea
       case "team":
-        return formData.mode === "individual" || (formData.teamMembers && formData.teamMembers.length > 0) === true
+        return true // Team name is optional (auto-generated), and members can be added later
       case "review":
         return formData.consent
       default:
@@ -224,13 +264,23 @@ export function SmartRegistrationForm({
     const currentIndex = steps.indexOf(currentStep)
     if (currentIndex > 0) {
       setCurrentStep(steps[currentIndex - 1])
+    } else if (currentStep === "mode") {
+      // At the first step, close the dialog instead of going back
+      setOpen(false)
     }
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     if (!validateCurrentStep()) {
+      // Specific error messages for review step
+      if (currentStep === "review") {
+        if (!formData.consent) {
+          addToast("error", "Please agree to the terms and conditions to complete registration")
+          return
+        }
+      }
       addToast("error", "Please complete all required fields")
       return
     }
@@ -299,7 +349,10 @@ export function SmartRegistrationForm({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button className="w-full">Smart Register</Button>
+        <Button size="lg" className="w-full font-bold text-base shadow-lg shadow-primary/20 hover:shadow-primary/40 transition-all gap-2">
+          <Zap className="h-5 w-5" />
+          Register Now
+        </Button>
       </DialogTrigger>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
@@ -315,7 +368,7 @@ export function SmartRegistrationForm({
             {/* Progress Bar */}
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
-                <span>Profile Completion</span>
+                <span>Registration Progress</span>
                 <span className="font-semibold">{completionPercentage}%</span>
               </div>
               <div className="w-full bg-muted rounded-full h-2">
@@ -334,9 +387,8 @@ export function SmartRegistrationForm({
                     <h3 className="font-semibold mb-3">Choose Registration Type</h3>
                     <div className="grid grid-cols-2 gap-3">
                       <Card
-                        className={`cursor-pointer transition-all ${
-                          formData.mode === "individual" ? "ring-2 ring-primary" : ""
-                        }`}
+                        className={`cursor-pointer transition-all ${formData.mode === "individual" ? "ring-2 ring-primary" : ""
+                          }`}
                         onClick={() => handleFieldChange("mode", "individual")}
                       >
                         <CardHeader className="pb-3">
@@ -349,9 +401,8 @@ export function SmartRegistrationForm({
                         </CardContent>
                       </Card>
                       <Card
-                        className={`cursor-pointer transition-all ${
-                          formData.mode === "team" ? "ring-2 ring-primary" : ""
-                        }`}
+                        className={`cursor-pointer transition-all ${formData.mode === "team" ? "ring-2 ring-primary" : ""
+                          }`}
                         onClick={() => handleFieldChange("mode", "team")}
                       >
                         <CardHeader className="pb-3">
@@ -410,6 +461,15 @@ export function SmartRegistrationForm({
                       onChange={(e) => handleFieldChange("university", e.target.value)}
                       placeholder="Your institution"
                       required
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="enrollmentNumber">Enrollment / Student ID</Label>
+                    <Input
+                      id="enrollmentNumber"
+                      value={formData.enrollmentNumber}
+                      onChange={(e) => handleFieldChange("enrollmentNumber", e.target.value)}
+                      placeholder="e.g. 21BCP001"
                     />
                   </div>
                   <div className="grid grid-cols-2 gap-3">
@@ -532,18 +592,116 @@ export function SmartRegistrationForm({
               {/* Team Management Step */}
               {currentStep === "team" && (
                 <div className="space-y-4">
-                  {formData.mode === "team" ? (
-                    <div>
-                      <Label htmlFor="teamName">Team Name</Label>
-                      <Input
-                        id="teamName"
-                        value={formData.teamName || ""}
-                        onChange={(e) => handleFieldChange("teamName", e.target.value)}
-                        placeholder="Your awesome team name"
-                      />
-                      <p className="text-xs text-muted-foreground mt-1">Leave empty to auto-generate</p>
+                  {formData.mode === "team" && (
+                    <div className="space-y-4">
+                      <div>
+                        <Label htmlFor="teamName">Team Name</Label>
+                        <Input
+                          id="teamName"
+                          value={formData.teamName || ""}
+                          onChange={(e) => handleFieldChange("teamName", e.target.value)}
+                          placeholder="Your awesome team name"
+                        />
+                        <p className="text-xs text-muted-foreground mt-1">Leave empty to auto-generate</p>
+                      </div>
+
+                      <div>
+                        <Label>Team Members (Minimum 2)</Label>
+                        <div className="space-y-2 mb-3 max-h-48 overflow-y-auto">
+                          {formData.teamMembers && formData.teamMembers.length > 0 && (
+                            formData.teamMembers.map((member, index) => (
+                              <Card key={index} className="p-3">
+                                <div className="flex items-center justify-between gap-2">
+                                  <div className="flex-1 min-w-0">
+                                    <p className="text-sm font-medium truncate">{member.name}</p>
+                                    <p className="text-xs text-muted-foreground truncate">{member.email}</p>
+                                  </div>
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => {
+                                      const updated = formData.teamMembers?.filter((_, i) => i !== index) || []
+                                      handleFieldChange("teamMembers", updated)
+                                    }}
+                                    className="text-destructive hover:text-destructive"
+                                  >
+                                    Remove
+                                  </Button>
+                                </div>
+                              </Card>
+                            ))
+                          )}
+                          {(!formData.teamMembers || formData.teamMembers.length === 0) && (
+                            <p className="text-xs text-muted-foreground italic">No team members added yet</p>
+                          )}
+                        </div>
+
+                        <div className="space-y-2 p-3 border rounded-lg bg-muted/30">
+                          <div className="text-sm font-medium">Add Team Member</div>
+                          <Input
+                            id="memberName"
+                            placeholder="Member name"
+                            onKeyPress={(e) => {
+                              if (e.key === "Enter") {
+                                e.preventDefault()
+                                const nameInput = document.getElementById("memberName") as HTMLInputElement
+                                const emailInput = document.getElementById("memberEmail") as HTMLInputElement
+                                if (nameInput.value && emailInput.value) {
+                                  handleFieldChange("teamMembers", [
+                                    ...(formData.teamMembers || []),
+                                    { name: nameInput.value, email: emailInput.value },
+                                  ])
+                                  nameInput.value = ""
+                                  emailInput.value = ""
+                                }
+                              }
+                            }}
+                          />
+                          <Input
+                            id="memberEmail"
+                            type="email"
+                            placeholder="Member email"
+                            onKeyPress={(e) => {
+                              if (e.key === "Enter") {
+                                e.preventDefault()
+                                const nameInput = document.getElementById("memberName") as HTMLInputElement
+                                const emailInput = document.getElementById("memberEmail") as HTMLInputElement
+                                if (nameInput.value && emailInput.value) {
+                                  handleFieldChange("teamMembers", [
+                                    ...(formData.teamMembers || []),
+                                    { name: nameInput.value, email: emailInput.value },
+                                  ])
+                                  nameInput.value = ""
+                                  emailInput.value = ""
+                                }
+                              }
+                            }}
+                          />
+                          <Button
+                            type="button"
+                            variant="outline"
+                            className="w-full"
+                            onClick={() => {
+                              const nameInput = document.getElementById("memberName") as HTMLInputElement
+                              const emailInput = document.getElementById("memberEmail") as HTMLInputElement
+                              if (nameInput.value && emailInput.value) {
+                                handleFieldChange("teamMembers", [
+                                  ...(formData.teamMembers || []),
+                                  { name: nameInput.value, email: emailInput.value },
+                                ])
+                                nameInput.value = ""
+                                emailInput.value = ""
+                              }
+                            }}
+                          >
+                            Add Member
+                          </Button>
+                        </div>
+                      </div>
                     </div>
-                  ) : (
+                  )}
+                  {formData.mode !== "team" && (
                     <Card className="bg-muted">
                       <CardContent className="pt-6">
                         <p className="text-sm">You're registered as an individual participant</p>
@@ -582,16 +740,21 @@ export function SmartRegistrationForm({
                     </CardContent>
                   </Card>
 
-                  <div className="flex items-start gap-2">
-                    <Checkbox
-                      id="consent"
-                      checked={formData.consent}
-                      onCheckedChange={(checked: boolean) => handleFieldChange("consent", checked)}
-                    />
-                    <Label htmlFor="consent" className="text-sm cursor-pointer">
-                      I agree to the hackathon terms and conditions and understand that my data will be used for
-                      event management purposes
-                    </Label>
+                  <div className="space-y-3">
+                    <div className="bg-muted/50 p-4 rounded-lg border border-border">
+                      <div className="flex items-start gap-3">
+                        <Checkbox
+                          id="consent"
+                          checked={formData.consent}
+                          onCheckedChange={(checked: boolean) => handleFieldChange("consent", checked)}
+                          className="mt-1"
+                        />
+                        <Label htmlFor="consent" className="text-sm cursor-pointer font-medium text-foreground leading-relaxed">
+                          I agree to the hackathon terms and conditions and understand that my data will be used for
+                          event management purposes
+                        </Label>
+                      </div>
+                    </div>
                   </div>
                 </div>
               )}
@@ -602,9 +765,8 @@ export function SmartRegistrationForm({
                   type="button"
                   variant="outline"
                   onClick={handlePreviousStep}
-                  disabled={currentStep === "mode"}
                 >
-                  Previous
+                  {currentStep === "mode" ? "Cancel" : "Previous"}
                 </Button>
 
                 {currentStep !== "review" ? (
@@ -633,11 +795,10 @@ export function SmartRegistrationForm({
                   suggestions.map((suggestion, idx) => (
                     <div
                       key={idx}
-                      className={`p-3 rounded-lg border-l-4 ${
-                        suggestion.importance === "high"
-                          ? "border-l-destructive bg-destructive/5"
-                          : "border-l-yellow-500 bg-yellow-500/5"
-                      }`}
+                      className={`p-3 rounded-lg border-l-4 ${suggestion.importance === "high"
+                        ? "border-l-destructive bg-destructive/5"
+                        : "border-l-yellow-500 bg-yellow-500/5"
+                        }`}
                     >
                       <p className="font-medium text-sm">{suggestion.title}</p>
                       <p className="text-xs text-muted-foreground mt-1">{suggestion.description}</p>

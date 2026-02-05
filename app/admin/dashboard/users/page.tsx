@@ -176,14 +176,14 @@ export default function UsersPage() {
                               user.status === "active"
                                 ? "default"
                                 : user.status === "suspended"
-                                ? "destructive"
-                                : "secondary"
+                                  ? "destructive"
+                                  : "secondary"
                             }
                           >
                             {user.status}
                           </Badge>
                         </TableCell>
-                        <TableCell>{new Date(user.createdAt).toLocaleDateString()}</TableCell>
+                        <TableCell>{new Date(user.createdAt).toLocaleDateString('en-US')}</TableCell>
                         <TableCell className="text-right">
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>

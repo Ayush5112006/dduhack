@@ -147,7 +147,7 @@ export default function ApprovalsPage() {
                         <TableCell>
                           <Badge variant="outline">{user.role}</Badge>
                         </TableCell>
-                        <TableCell>{new Date(user.createdAt).toLocaleDateString()}</TableCell>
+                        <TableCell>{new Date(user.createdAt).toLocaleDateString('en-US')}</TableCell>
                         <TableCell className="text-right">
                           <div className="flex gap-2 justify-end">
                             <Button

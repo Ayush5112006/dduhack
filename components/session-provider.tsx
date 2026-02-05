@@ -12,6 +12,7 @@ export interface User {
 interface SessionContextType {
   user: User | null
   isLoading: boolean
+  sessionFetched: boolean
   login: (user: User) => void
   logout: () => void
   isAuthenticated: boolean
@@ -22,6 +23,7 @@ const SessionContext = createContext<SessionContextType | undefined>(undefined)
 export function SessionProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [sessionFetched, setSessionFetched] = useState(false)
 
   // Check session on mount
   useEffect(() => {
@@ -37,11 +39,15 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
           if (sessionData.user) {
             setUser(sessionData.user)
           }
+        } else if (response.status !== 401) {
+          // Only log unexpected errors
+          console.error("Failed to check session:", response.statusText)
         }
       } catch (error) {
         console.error("Failed to check session:", error)
       } finally {
         setIsLoading(false)
+        setSessionFetched(true)
       }
     }
 
@@ -71,6 +77,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       value={{
         user,
         isLoading,
+        sessionFetched,
         login,
         logout,
         isAuthenticated: !!user,

@@ -31,8 +31,20 @@ export async function GET() {
             status: true,
             prizeAmount: true,
             category: true,
+            minTeamSize: true,
+            maxTeamSize: true,
+            allowTeams: true,
           },
         },
+        team: {
+          select: {
+            id: true,
+            name: true,
+            members: {
+              select: { id: true }
+            }
+          }
+        }
       },
       orderBy: {
         createdAt: "desc",
@@ -52,6 +64,12 @@ export async function GET() {
       mode: reg.mode,
       registrationStatus: reg.status,
       registeredAt: reg.createdAt.toISOString(),
+      teamId: reg.team?.id,
+      teamName: reg.team?.name,
+      teamMembers: reg.team?.members.length || 0,
+      minTeamSize: reg.hackathon.minTeamSize,
+      maxTeamSize: reg.hackathon.maxTeamSize,
+      allowTeams: reg.hackathon.allowTeams,
     }))
 
     return NextResponse.json({ registrations: formatted })

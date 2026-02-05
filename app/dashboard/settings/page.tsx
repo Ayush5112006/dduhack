@@ -3,7 +3,6 @@
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { DashboardSidebar } from "@/components/dashboard/sidebar"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -96,89 +95,98 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <DashboardSidebar type="participant" />
-      <main className="ml-64 p-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-foreground">Settings</h1>
-          <p className="mt-2 text-muted-foreground">
+    <div className="container mx-auto px-4 py-8 max-w-7xl">
+      <main className="space-y-8">
+        <div className="">
+          <h1 className="text-2xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-foreground leading-tight">
+            Settings
+          </h1>
+          <p className="mt-2 text-xs sm:text-sm md:text-base text-muted-foreground">
             Manage your account and preferences
           </p>
         </div>
 
-        <div className="space-y-6">
+        <div className="space-y-4 sm:space-y-6">
           {/* Notifications Settings */}
-          <Card className="border-border bg-card">
-            <CardHeader>
+          <Card className="border border-border/50 bg-card/50 backdrop-blur-sm shadow-sm hover:shadow-md transition-shadow">
+            <CardHeader className="pb-3 sm:pb-4">
               <div className="flex items-center gap-2">
-                <Bell className="h-5 w-5" />
-                <CardTitle>Notification Preferences</CardTitle>
+                <Bell className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
+                <CardTitle className="text-base sm:text-lg md:text-xl">Notification Preferences</CardTitle>
               </div>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="font-medium text-foreground">Email Notifications</p>
-                  <p className="text-sm text-muted-foreground">
+            <CardContent className="space-y-3 sm:space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium text-sm sm:text-base text-foreground leading-snug">Email Notifications</p>
+                  <p className="text-xs sm:text-sm text-muted-foreground mt-1">
                     Receive notifications via email
                   </p>
                 </div>
-                <Switch
-                  checked={settings.emailNotifications}
-                  onCheckedChange={() => handleToggle("emailNotifications")}
-                />
+                <div className="flex-shrink-0">
+                  <Switch
+                    checked={settings.emailNotifications}
+                    onCheckedChange={() => handleToggle("emailNotifications")}
+                  />
+                </div>
               </div>
-              <div className="flex items-center justify-between border-t border-border pt-4">
-                <div>
-                  <p className="font-medium text-foreground">Push Notifications</p>
-                  <p className="text-sm text-muted-foreground">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 border-t border-border/30 pt-3 sm:pt-4">
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium text-sm sm:text-base text-foreground leading-snug">Push Notifications</p>
+                  <p className="text-xs sm:text-sm text-muted-foreground mt-1">
                     Receive browser push notifications
                   </p>
                 </div>
-                <Switch
-                  checked={settings.pushNotifications}
-                  onCheckedChange={() => handleToggle("pushNotifications")}
-                />
+                <div className="flex-shrink-0">
+                  <Switch
+                    checked={settings.pushNotifications}
+                    onCheckedChange={() => handleToggle("pushNotifications")}
+                  />
+                </div>
               </div>
-              <div className="flex items-center justify-between border-t border-border pt-4">
-                <div>
-                  <p className="font-medium text-foreground">Activity Updates</p>
-                  <p className="text-sm text-muted-foreground">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 border-t border-border/30 pt-3 sm:pt-4">
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium text-sm sm:text-base text-foreground leading-snug">Activity Updates</p>
+                  <p className="text-xs sm:text-sm text-muted-foreground mt-1">
                     Get updates about your activities
                   </p>
                 </div>
-                <Switch
-                  checked={settings.activityEmails}
-                  onCheckedChange={() => handleToggle("activityEmails")}
-                />
+                <div className="flex-shrink-0">
+                  <Switch
+                    checked={settings.activityEmails}
+                    onCheckedChange={() => handleToggle("activityEmails")}
+                  />
+                </div>
               </div>
-              <div className="flex items-center justify-between border-t border-border pt-4">
-                <div>
-                  <p className="font-medium text-foreground">Marketing Emails</p>
-                  <p className="text-sm text-muted-foreground">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 border-t border-border/30 pt-3 sm:pt-4">
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium text-sm sm:text-base text-foreground leading-snug">Marketing Emails</p>
+                  <p className="text-xs sm:text-sm text-muted-foreground mt-1">
                     Receive promotional and marketing emails
                   </p>
                 </div>
-                <Switch
-                  checked={settings.marketingEmails}
-                  onCheckedChange={() => handleToggle("marketingEmails")}
-                />
+                <div className="flex-shrink-0">
+                  <Switch
+                    checked={settings.marketingEmails}
+                    onCheckedChange={() => handleToggle("marketingEmails")}
+                  />
+                </div>
               </div>
             </CardContent>
           </Card>
 
           {/* Privacy Settings */}
-          <Card className="border-border bg-card">
-            <CardHeader>
+          <Card className="border border-border/50 bg-card/50 backdrop-blur-sm shadow-sm hover:shadow-md transition-shadow">
+            <CardHeader className="pb-3 sm:pb-4">
               <div className="flex items-center gap-2">
-                <Eye className="h-5 w-5" />
-                <CardTitle>Privacy & Visibility</CardTitle>
+                <Eye className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
+                <CardTitle className="text-base sm:text-lg md:text-xl">Privacy & Visibility</CardTitle>
               </div>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-3 sm:space-y-4">
               <div>
-                <p className="font-medium text-foreground mb-3">Profile Visibility</p>
-                <div className="flex gap-3">
+                <p className="font-medium text-sm sm:text-base text-foreground mb-3">Profile Visibility</p>
+                <div className="flex flex-wrap gap-2 sm:gap-3">
                   {["public", "private", "hackathon-only"].map((level) => (
                     <Button
                       key={level}
@@ -189,7 +197,7 @@ export default function SettingsPage() {
                       onClick={() =>
                         setSettings({ ...settings, profileVisibility: level })
                       }
-                      className="capitalize"
+                      className="capitalize text-xs sm:text-sm h-9 sm:h-10 px-3 sm:px-4"
                     >
                       {level.replace("-", " ")}
                     </Button>
@@ -200,29 +208,31 @@ export default function SettingsPage() {
           </Card>
 
           {/* Security Settings */}
-          <Card className="border-border bg-card">
-            <CardHeader>
+          <Card className="border border-border/50 bg-card/50 backdrop-blur-sm shadow-sm hover:shadow-md transition-shadow">
+            <CardHeader className="pb-3 sm:pb-4">
               <div className="flex items-center gap-2">
-                <Shield className="h-5 w-5" />
-                <CardTitle>Security</CardTitle>
+                <Shield className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
+                <CardTitle className="text-base sm:text-lg md:text-xl">Security</CardTitle>
               </div>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="font-medium text-foreground">Two-Factor Authentication</p>
-                  <p className="text-sm text-muted-foreground">
+            <CardContent className="space-y-4 sm:space-y-5">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium text-sm sm:text-base text-foreground leading-snug">Two-Factor Authentication</p>
+                  <p className="text-xs sm:text-sm text-muted-foreground mt-1">
                     Add an extra layer of security
                   </p>
                 </div>
-                <Switch
-                  checked={settings.twoFactorAuth}
-                  onCheckedChange={() => handleToggle("twoFactorAuth")}
-                />
+                <div className="flex-shrink-0">
+                  <Switch
+                    checked={settings.twoFactorAuth}
+                    onCheckedChange={() => handleToggle("twoFactorAuth")}
+                  />
+                </div>
               </div>
               <Button
                 variant="outline"
-                className="w-full gap-2 border-border justify-start mt-4"
+                className="w-full sm:w-auto gap-2 border-border/50 justify-center sm:justify-start mt-2 h-10 text-sm"
                 onClick={handleChangePassword}
               >
                 <Lock className="h-4 w-4" />
@@ -232,20 +242,20 @@ export default function SettingsPage() {
           </Card>
 
           {/* Session Management */}
-          <Card className="border-border bg-card">
-            <CardHeader>
-              <CardTitle>Session Management</CardTitle>
+          <Card className="border border-border/50 bg-card/50 backdrop-blur-sm shadow-sm hover:shadow-md transition-shadow">
+            <CardHeader className="pb-3 sm:pb-4">
+              <CardTitle className="text-base sm:text-lg md:text-xl">Session Management</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <p className="text-sm text-muted-foreground">
+            <CardContent className="space-y-4 sm:space-y-5">
+              <p className="text-xs sm:text-sm text-muted-foreground">
                 You are currently logged in from this device
               </p>
-              <Badge variant="outline" className="bg-green-500/10 text-green-500">
+              <Badge variant="outline" className="w-fit bg-green-500/10 text-green-500 border-green-500/30 text-xs sm:text-sm">
                 Active
               </Badge>
               <Button
                 variant="outline"
-                className="w-full gap-2 justify-start"
+                className="w-full sm:w-auto gap-2 border-border/50 justify-center sm:justify-start h-10 text-sm"
                 onClick={handleLogoutAll}
                 disabled={isLoggingOutAll}
               >
@@ -256,17 +266,17 @@ export default function SettingsPage() {
           </Card>
 
           {/* Danger Zone */}
-          <Card className="border-destructive/50 bg-destructive/5">
-            <CardHeader>
-              <CardTitle className="text-destructive">Danger Zone</CardTitle>
+          <Card className="border border-destructive/30 bg-destructive/5 backdrop-blur-sm shadow-sm">
+            <CardHeader className="pb-3 sm:pb-4">
+              <CardTitle className="text-base sm:text-lg md:text-xl text-destructive">Danger Zone</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-sm text-muted-foreground mb-4">
+              <p className="text-xs sm:text-sm text-muted-foreground mb-4">
                 These actions cannot be undone. Please proceed with caution.
               </p>
               <Button
                 variant="destructive"
-                className="gap-2"
+                className="w-full sm:w-auto gap-2 h-10 text-sm"
                 onClick={handleDeleteAccount}
                 disabled={isDeleting}
               >

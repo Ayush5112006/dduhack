@@ -17,7 +17,6 @@ async function main() {
       password: adminPassword,
       role: 'admin',
       status: 'active',
-      isVerified: true,
     },
   })
 
@@ -32,7 +31,6 @@ async function main() {
       password: organizerPassword,
       role: 'organizer',
       status: 'active',
-      isVerified: true,
     },
   })
 
@@ -47,7 +45,6 @@ async function main() {
       password: participantPassword,
       role: 'participant',
       status: 'active',
-      isVerified: true,
     },
   })
 
@@ -62,7 +59,6 @@ async function main() {
       password: studentPassword,
       role: 'participant',
       status: 'active',
-      isVerified: true,
     },
   })
 
@@ -122,6 +118,7 @@ async function main() {
       id: 'demo-team-1',
       hackathonId: hackathon.id,
       name: 'Team Demo',
+      code: 'DEMOTEAM',
       leaderId: participant.id,
       leaderEmail: participant.email,
       locked: false,

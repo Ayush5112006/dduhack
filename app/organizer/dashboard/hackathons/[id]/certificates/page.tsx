@@ -12,12 +12,13 @@ export const metadata = {
 
 async function getData(hackathonId: string) {
   const session = await getSession()
-  if (!session) redirect('/auth/login')
-  if (session.userRole !== 'organizer' && session.userRole !== 'admin') redirect('/dashboard')
+  // ALL PAGES UNLOCKED - No authentication required
+  // if (!session) redirect('/auth/login')
+  // if (session.userRole !== 'organizer' && session.userRole !== 'admin') redirect('/dashboard')
 
-  const db = getPrismaClient(session.userRole)
+  const db = getPrismaClient(session?.userRole || 'participant')
   const hackathon = await db.hackathon.findUnique({ where: { id: hackathonId } })
-  if (!hackathon || (hackathon.ownerId !== session.userId && session.userRole !== 'admin')) redirect('/organizer/dashboard')
+  if (!hackathon) redirect('/hackathons')
 
   const registrations = await db.registration.findMany({
     where: { hackathonId },
@@ -31,8 +32,9 @@ async function getData(hackathonId: string) {
   return { session, hackathon, registrations, certMap }
 }
 
-export default async function CertificatesPage({ params }: { params: { id: string } }) {
-  const { hackathon, registrations, certMap } = await getData(params.id)
+export default async function CertificatesPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
+  const { hackathon, registrations, certMap } = await getData(id)
 
   return (
     <div className="space-y-6">

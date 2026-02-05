@@ -1,60 +1,90 @@
-import { NextResponse } from 'next/server'
-import { sendEmail } from '@/lib/email'
+import { NextRequest, NextResponse } from "next/server"
+import { prisma } from "@/lib/prisma"
+import { generateOTP, getOTPExpirationTime } from "@/lib/otp-generator"
+import { sendOTPEmail } from "@/lib/email-service"
 
-function isValidEmail(email: string) {
-  return /.+@.+\..+/.test(email)
-}
+export const runtime = "nodejs"
 
-function generateOtp() {
-  return Math.floor(100000 + Math.random() * 900000).toString()
-}
-
-export async function POST(req: Request) {
+export async function POST(request: NextRequest) {
   try {
-    const body = await req.json().catch(() => ({} as any))
-    const email: string = (body?.email || '').trim().toLowerCase()
-    const applicationNumber: string = (body?.applicationNumber || '').trim()
+    const body = await request.json()
+    const { email } = body
 
-    if (!email || !applicationNumber) {
-      return NextResponse.json({ error: 'Email and application number are required.' }, { status: 400 })
+    if (!email) {
+      return NextResponse.json(
+        { error: "Email is required" },
+        { status: 400 }
+      )
     }
-    if (!isValidEmail(email)) {
-      return NextResponse.json({ error: 'Invalid email address.' }, { status: 400 })
+
+    // Check if user exists (for password reset, we generally want to verify this quietly)
+    const user = await prisma.user.findUnique({
+      where: { email },
+    })
+
+    if (!user) {
+      // Security: Don't reveal if user exists
+      // But for a hackathon/demo, we might want to be explicit. 
+      // Let's stick to standard practice: success but no op.
+      return NextResponse.json(
+        {
+          success: true,
+          message: "If an account exists with this email, an OTP has been sent."
+        },
+        { status: 200 }
+      )
     }
 
-    const otp = generateOtp()
+    // Check rate limits/existing OTP
+    const existingOTP = await prisma.emailOTP.findUnique({
+      where: { email },
+    })
 
-    const subject = 'Your OTP for application verification'
-    const html = `
-      <p>Hello,</p>
-      <p>Here is your OTP for application <strong>${applicationNumber}</strong>:</p>
-      <p style="font-size:22px;font-weight:bold;letter-spacing:4px;">${otp}</p>
-      <p>This code expires in 10 minutes.</p>
-      <p>If you did not request this, you can ignore this email.</p>
-    `
-
-    let sent = false
-    if (process.env.RESEND_API_KEY) {
-      try {
-        await sendEmail({ to: email, subject, html })
-        sent = true
-      } catch (err) {
-        console.error('Email send failed (mocking fallback).', err)
+    if (existingOTP && existingOTP.createdAt) {
+      const timeSinceCreation = new Date().getTime() - new Date(existingOTP.createdAt).getTime()
+      // 1 minute cooldown
+      if (timeSinceCreation < 60 * 1000) {
+        return NextResponse.json(
+          { error: "Please wait a minute before requesting another OTP." },
+          { status: 429 }
+        )
       }
     }
 
-    // Return masked response; include otp in non-production for developer visibility
+    const otp = generateOTP()
+    const expiresAt = getOTPExpirationTime(10) // 10 mins
+
+    // Save to DB
+    await prisma.emailOTP.deleteMany({ where: { email } })
+    await prisma.emailOTP.create({
+      data: {
+        email,
+        otp,
+        expiresAt,
+        attempts: 0
+      }
+    })
+
+    // Send Email
+    await sendOTPEmail(email, otp, 10)
+
+    // Return mock OTP in dev mode for testing
     const response: any = {
       success: true,
-      message: sent ? 'If this email is registered, an OTP has been sent.' : 'Mock send completed (dev mode).',
+      message: "OTP sent successfully."
     }
+
     if (process.env.NODE_ENV !== 'production') {
       response.mockOtp = otp
     }
 
     return NextResponse.json(response)
-  } catch (error: any) {
-    console.error(error)
-    return NextResponse.json({ error: 'Unable to process request' }, { status: 500 })
+
+  } catch (error) {
+    console.error("Forgot Password OTP error:", error)
+    return NextResponse.json(
+      { error: "Failed to process request" },
+      { status: 500 }
+    )
   }
 }

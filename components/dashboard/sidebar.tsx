@@ -72,11 +72,11 @@ type DashboardType = "participant" | "organizer" | "admin"
 export function DashboardSidebar({ type }: { type: DashboardType }) {
   const pathname = usePathname()
   const router = useRouter()
-  const { logout } = useSession()
   const [userData, setUserData] = useState<any>(null)
   const [mobileOpen, setMobileOpen] = useState(false)
+  const { logout } = useSession()
 
-  // Fetch user data
+  // Fetch user data only once on mount
   useEffect(() => {
     async function fetchUserData() {
       try {
@@ -147,7 +147,7 @@ export function DashboardSidebar({ type }: { type: DashboardType }) {
   )
 
   const UserBlock = () => (
-    <div className="flex items-center gap-3 rounded-lg px-3 py-2">
+    <div className="flex items-center gap-3 rounded-lg px-3 py-2" suppressHydrationWarning>
       <div className="relative flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-sm font-medium text-primary overflow-hidden">
         {userData?.profile?.avatar ? (
           <Image
@@ -173,18 +173,18 @@ export function DashboardSidebar({ type }: { type: DashboardType }) {
   return (
     <>
       {/* Mobile header with menu toggle */}
-      <div className="flex items-center justify-between border-b border-border bg-card px-4 py-3 lg:hidden">
-        <Link href="/" className="flex items-center gap-2">
+      <div className="flex items-center justify-between border-b border-border/50 bg-card/95 backdrop-blur-sm px-3 sm:px-4 py-3 lg:hidden">
+        <Link href="/" className="flex items-center gap-2 flex-shrink-0">
           <Logo />
         </Link>
         <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
           <SheetTrigger asChild>
-            <Button variant="outline" size="icon" aria-label="Open menu">
+            <Button variant="outline" size="icon" aria-label="Open menu" className="border-0 bg-secondary/50 hover:bg-secondary">
               <Menu className="h-5 w-5" />
             </Button>
           </SheetTrigger>
-          <SheetContent side="left" className="w-72 p-0">
-            <div className="border-b border-border px-6 py-4">
+          <SheetContent side="left" className="w-72 p-0 border-r border-border/50">
+            <div className="border-b border-border/50 px-6 py-4 bg-secondary/30">
               <SheetHeader>
                 <SheetTitle className="flex items-center gap-2 text-lg font-semibold">
                   <Logo showText={false} size={28} />
@@ -197,11 +197,11 @@ export function DashboardSidebar({ type }: { type: DashboardType }) {
                 <p className="mb-3 px-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Navigation</p>
                 <NavLinks />
               </div>
-              <div className="border-t border-border pt-4 space-y-2">
+              <div className="border-t border-border/50 pt-4 space-y-2">
                 <UserBlock />
                 <Button
                   variant="ghost"
-                  className="w-full justify-start gap-3"
+                  className="w-full justify-start gap-3 text-muted-foreground hover:bg-secondary hover:text-foreground"
                   onClick={handleLogout}
                 >
                   <LogOut className="h-4 w-4" />
@@ -214,9 +214,9 @@ export function DashboardSidebar({ type }: { type: DashboardType }) {
       </div>
 
       {/* Desktop sidebar */}
-      <aside className="fixed left-0 top-0 z-40 hidden h-screen w-64 border-r border-border bg-card lg:block">
+      <aside className="fixed left-0 top-0 z-40 hidden h-screen w-64 border-r border-border/50 bg-card/95 backdrop-blur-sm lg:block">
         <div className="flex h-full flex-col">
-          <div className="flex h-16 items-center border-b border-border px-6">
+          <div className="flex h-16 items-center border-b border-border/50 px-6">
             <Link href="/" className="flex items-center gap-2">
               <Logo />
             </Link>
@@ -229,12 +229,12 @@ export function DashboardSidebar({ type }: { type: DashboardType }) {
             <NavLinks />
           </div>
 
-          <div className="border-t border-border p-4 space-y-2">
+          <div className="border-t border-border/50 p-4 space-y-2">
             <UserBlock />
             <button
               type="button"
               onClick={handleLogout}
-              className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+              className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition-all hover:bg-secondary hover:text-foreground"
             >
               <LogOut className="h-4 w-4" />
               Sign out

@@ -285,3 +285,198 @@ export async function sendWelcomeEmail(email: string, name: string): Promise<voi
     // Don't throw error for welcome email - it's non-critical
   }
 }
+
+/**
+ * Send mentor invitation email with login credentials
+ * @param email - Mentor's email address
+ * @param name - Mentor's name
+ * @param password - Generated password (only for new users)
+ * @param hackathonTitle - Name of the hackathon
+ * @param isNewUser - Whether this is a new user account
+ */
+export async function sendMentorInvitationEmail(params: {
+  email: string
+  name: string
+  password: string
+  hackathonTitle: string
+  isNewUser: boolean
+}): Promise<void> {
+  const { email, name, password, hackathonTitle, isNewUser } = params
+
+  try {
+    const htmlContent = isNewUser ? `
+      <!DOCTYPE html>
+      <html lang="en">
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <style>
+          body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; background-color: #f9f9f9; margin: 0; padding: 0; }
+          .container { max-width: 600px; margin: 20px auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+          .header { text-align: center; margin-bottom: 30px; border-bottom: 3px solid #2563eb; padding-bottom: 20px; }
+          .header h1 { color: #2563eb; margin: 0; font-size: 28px; }
+          .credentials-box { background: #f3f4f6; padding: 20px; border-radius: 8px; margin: 20px 0; }
+          .credentials-box h3 { margin-top: 0; color: #1f2937; }
+          .credential-item { margin: 10px 0; }
+          .credential-item strong { display: inline-block; width: 120px; }
+          .password-code { background: #e5e7eb; padding: 8px 12px; border-radius: 4px; font-family: 'Courier New', monospace; font-size: 16px; font-weight: bold; }
+          .warning-box { background: #fef3c7; border-left: 4px solid #f59e0b; padding: 15px; margin: 20px 0; border-radius: 4px; color: #92400e; }
+          .button { display: inline-block; padding: 12px 24px; background: #2563eb; color: white; text-decoration: none; border-radius: 6px; font-weight: bold; margin-top: 20px; }
+          .footer { text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd; font-size: 12px; color: #999; }
+          ul { padding-left: 20px; }
+          ul li { margin: 8px 0; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>🎓 Welcome as a Mentor!</h1>
+            <p>HackHub Platform</p>
+          </div>
+
+          <p>Hi <strong>${name}</strong>,</p>
+
+          <p>You've been added as a mentor for <strong>${hackathonTitle}</strong>. We're excited to have you guide and support participants!</p>
+
+          <div class="credentials-box">
+            <h3>🔐 Your Login Credentials</h3>
+            <div class="credential-item">
+              <strong>Email/User ID:</strong> ${email}
+            </div>
+            <div class="credential-item">
+              <strong>Password:</strong> <span class="password-code">${password}</span>
+            </div>
+          </div>
+
+          <div class="warning-box">
+            <strong>⚠️ Important Security Notice:</strong><br>
+            Please change your password after your first login for security purposes.
+          </div>
+
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/auth/login" class="button">
+              Login to Dashboard →
+            </a>
+          </div>
+
+          <h3>As a Mentor, you can:</h3>
+          <ul>
+            <li>Guide and support participants throughout the hackathon</li>
+            <li>Review project submissions and provide feedback</li>
+            <li>Answer questions and help teams overcome challenges</li>
+            <li>Share your expertise and industry insights</li>
+            <li>Help participants develop their skills</li>
+          </ul>
+
+          <p>If you have any questions or need assistance, please don't hesitate to reach out to the organizing team.</p>
+
+          <p>Best regards,<br>
+          <strong>HackHub Team</strong></p>
+
+          <div class="footer">
+            <p>© ${new Date().getFullYear()} HackHub. All rights reserved.</p>
+            <p>This is an automated email. Please do not reply to this message.</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    ` : `
+      <!DOCTYPE html>
+      <html lang="en">
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <style>
+          body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; background-color: #f9f9f9; margin: 0; padding: 0; }
+          .container { max-width: 600px; margin: 20px auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+          .header { text-align: center; margin-bottom: 30px; border-bottom: 3px solid #2563eb; padding-bottom: 20px; }
+          .header h1 { color: #2563eb; margin: 0; font-size: 28px; }
+          .info-box { background: #f3f4f6; padding: 20px; border-radius: 8px; margin: 20px 0; }
+          .button { display: inline-block; padding: 12px 24px; background: #2563eb; color: white; text-decoration: none; border-radius: 6px; font-weight: bold; margin-top: 20px; }
+          .footer { text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd; font-size: 12px; color: #999; }
+          ul { padding-left: 20px; }
+          ul li { margin: 8px 0; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>🎓 You're a Mentor!</h1>
+            <p>HackHub Platform</p>
+          </div>
+
+          <p>Hi <strong>${name}</strong>,</p>
+
+          <p>You've been added as a mentor for <strong>${hackathonTitle}</strong>.</p>
+
+          <div class="info-box">
+            <h3>Login Information</h3>
+            <p>Please use your existing HackHub account credentials to login.</p>
+            <p><strong>Email:</strong> ${email}</p>
+          </div>
+
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/auth/login" class="button">
+              Login to Dashboard →
+            </a>
+          </div>
+
+          <h3>As a Mentor, you can:</h3>
+          <ul>
+            <li>Guide and support participants</li>
+            <li>Review project submissions</li>
+            <li>Provide feedback and mentorship</li>
+            <li>Help teams succeed</li>
+          </ul>
+
+          <p>Best regards,<br>
+          <strong>HackHub Team</strong></p>
+
+          <div class="footer">
+            <p>© ${new Date().getFullYear()} HackHub. All rights reserved.</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `
+
+    const mailOptions = {
+      from: `HackHub <${process.env.EMAIL_USER}>`,
+      to: email,
+      subject: isNewUser
+        ? '🎓 Welcome as a Mentor - Your Account Details'
+        : '🎓 You\'ve been added as a Mentor',
+      html: htmlContent,
+    }
+
+    await transporter.sendMail(mailOptions)
+    console.log(`✅ Mentor invitation email sent to ${email}`)
+  } catch (error) {
+    console.error(`❌ Failed to send mentor invitation email to ${email}:`, error)
+    throw new Error('Failed to send mentor invitation email')
+  }
+}
+
+/**
+ * Generic send email function for custom emails
+ */
+export async function sendEmail(params: {
+  to: string
+  subject: string
+  html: string
+}): Promise<void> {
+  try {
+    const mailOptions = {
+      from: `HackHub <${process.env.EMAIL_USER}>`,
+      to: params.to,
+      subject: params.subject,
+      html: params.html,
+    }
+
+    await transporter.sendMail(mailOptions)
+    console.log(`✅ Email sent to ${params.to}`)
+  } catch (error) {
+    console.error(`❌ Failed to send email to ${params.to}:`, error)
+    throw new Error('Failed to send email')
+  }
+}

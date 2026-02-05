@@ -137,6 +137,7 @@ export async function POST(request: NextRequest) {
         data: {
           hackathonId,
           name: teamName,
+          code: Math.random().toString(36).substring(2, 10).toUpperCase(),
           leaderId: session.userId,
           leaderEmail: session.userEmail,
           locked: false,
@@ -177,7 +178,6 @@ export async function POST(request: NextRequest) {
         status: "approved",
         consent,
         fullName: profileData.fullName,
-        userEmail: profileData.email,
         phone: profileData.phone || null,
         university: profileData.university || null,
         enrollmentNumber: profileData.enrollmentNumber || null,

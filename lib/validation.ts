@@ -46,7 +46,7 @@ export const nameSchema = z
   .regex(/^[a-zA-Z\s'-]+$/, "Name contains invalid characters")
 
 // Role validation
-export const roleSchema = z.enum(["participant", "organizer", "admin"])
+export const roleSchema = z.enum(["participant", "organizer", "admin", "judge"])
 
 // Authentication schemas
 export const loginSchema = z.object({
@@ -141,7 +141,7 @@ export const adminCreateUserSchema = z.object({
 /**
  * Generic validation function with error handling
  */
-export function validateData<T>(schema: z.ZodSchema<T>, data: unknown): { 
+export function validateData<T>(schema: z.ZodSchema<T>, data: unknown): {
   success: boolean
   data?: T
   error?: string
@@ -154,7 +154,7 @@ export function validateData<T>(schema: z.ZodSchema<T>, data: unknown): {
     if (error instanceof z.ZodError) {
       const details = error.flatten().fieldErrors
       const message = Object.entries(details)
-        .map(([field, errors]) => `${field}: ${errors?.join(", ")}`)
+        .map(([field, errors]) => `${field}: ${Array.isArray(errors) ? errors.join(", ") : String(errors)}`)
         .join("; ")
       return {
         success: false,

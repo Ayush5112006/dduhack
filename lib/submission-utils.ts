@@ -230,7 +230,7 @@ export const getSubmissionLockReason = (submission: any, hackathon?: any): strin
     const now = new Date()
     const endDate = new Date(hackathon.endDate)
     if (now > endDate) {
-      return `Submission deadline passed on ${endDate.toLocaleDateString()}`
+      return `Submission deadline passed on ${endDate.toLocaleDateString('en-US')}`
     }
   }
   return ""

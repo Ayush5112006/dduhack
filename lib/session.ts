@@ -48,7 +48,7 @@ async function readTokenFromCookie(): Promise<{ token: string; expiresAt: number
 async function setTokenCookie(session: Omit<Session, "loginTime">) {
   const cookieStore = await getCookieStore()
   const maxAge = Math.floor((session.expiresAt - Date.now()) / 1000)
-  
+
   cookieStore.set(SESSION_COOKIE_NAME, serializeCookiePayload(session), {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
@@ -75,6 +75,7 @@ export async function createSession(userData: Omit<Session, "token" | "loginTime
       token,
       userId: userData.userId,
       expiresAt: new Date(expiresAt),
+      absoluteExpiresAt: new Date(expiresAt + 24 * 60 * 60 * 1000),
     },
   })
 
@@ -98,6 +99,31 @@ export async function createSession(userData: Omit<Session, "token" | "loginTime
 }
 
 export async function getSession(): Promise<Session | null> {
+  // First check for OAuth demo session cookie
+  const cookieStore = await getCookieStore()
+  const oauthCookie = cookieStore.get("session")?.value
+
+  if (oauthCookie) {
+    try {
+      const oauthSession = JSON.parse(oauthCookie)
+      // Check if it's an OAuth demo session
+      if (oauthSession?.userId && oauthSession?.userEmail && oauthSession?.userRole) {
+        return {
+          token: oauthSession.userId,
+          userId: oauthSession.userId,
+          userEmail: oauthSession.userEmail,
+          userName: oauthSession.userName || "Demo User",
+          userRole: oauthSession.userRole,
+          loginTime: Date.now(),
+          expiresAt: Date.now() + (30 * 24 * 60 * 60 * 1000), // 30 days
+        }
+      }
+    } catch (error) {
+      // Not an OAuth session, continue to regular session check
+    }
+  }
+
+  // Regular session check
   const cookiePayload = await readTokenFromCookie()
   if (!cookiePayload) return null
 
@@ -109,7 +135,7 @@ export async function getSession(): Promise<Session | null> {
 
   // Try to find session in all role-based databases
   let sessionRecord = null
-  
+
   for (const role of ["participant", "organizer", "admin"] as const) {
     const db = getPrismaClient(role)
     try {
@@ -132,7 +158,7 @@ export async function getSession(): Promise<Session | null> {
   // Double check database expiry
   if (sessionRecord.expiresAt.getTime() < Date.now()) {
     const db = getPrismaClient(sessionRecord.user.role as "participant" | "organizer" | "admin")
-    await db.session.deleteMany({ where: { token: sessionRecord.token } }).catch(() => {})
+    await db.session.deleteMany({ where: { token: sessionRecord.token } }).catch(() => { })
     await clearTokenCookie()
     return null
   }

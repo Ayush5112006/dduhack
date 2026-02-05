@@ -1,138 +1,84 @@
-"use client"
-
-import { useEffect, useState } from "react"
-import { useParams } from "next/navigation"
-import { Card, CardContent } from "@/components/ui/card"
+import { verifyCertificate } from "@/app/actions/certificate"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Trophy, Award, CheckCircle, AlertCircle } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { CheckCircle2, XCircle, Award, ArrowRight } from "lucide-react"
 import Link from "next/link"
 
-type Certificate = {
-  id: string
-  userName: string
-  hackathonTitle: string
-  type: string
-  rank?: number
-  issuedAt: number
-  verificationCode: string
+export const metadata = {
+  title: "Verify Certificate | HackHub",
 }
 
-export default function VerifyCertificatePage() {
-  const params = useParams()
-  const code = params.code as string
-  const [certificate, setCertificate] = useState<Certificate | null>(null)
-  const [isValid, setIsValid] = useState<boolean | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
+export default async function VerifyCertificatePage({
+  params
+}: {
+  params: Promise<{ code: string }>
+}) {
+  const { code } = await params
+  const { certificate, error } = await verifyCertificate(code)
 
-  useEffect(() => {
-    const verify = async () => {
-      try {
-        const response = await fetch(`/api/certificates/verify/${code}`)
-        const data = await response.json()
-
-        if (response.ok && data.valid) {
-          setCertificate(data.certificate)
-          setIsValid(true)
-        } else {
-          setIsValid(false)
-        }
-      } catch (error) {
-        console.error("Verification error", error)
-        setIsValid(false)
-      } finally {
-        setIsLoading(false)
-      }
-    }
-    verify()
-  }, [code])
-
-  if (isLoading) {
-    return <div className="flex h-screen items-center justify-center">Verifying certificate...</div>
-  }
-
-  const getCertificateIcon = (type?: string) => {
-    if (type === "winner" || type === "runner-up") return <Trophy className="h-16 w-16 text-yellow-500" />
-    if (type === "completion") return <CheckCircle className="h-16 w-16 text-green-500" />
-    return <Award className="h-16 w-16 text-blue-500" />
-  }
-
-  const getCertificateLabel = (cert: Certificate) => {
-    if (cert.type === "winner" && cert.rank) {
-      return `${cert.rank === 1 ? "1st" : cert.rank === 2 ? "2nd" : "3rd"} Place Winner`
-    }
-    return cert.type.charAt(0).toUpperCase() + cert.type.slice(1)
+  if (error || !certificate) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background p-4">
+        <Card className="w-full max-w-md border-destructive/50 bg-destructive/5">
+          <CardHeader className="text-center">
+            <div className="mx-auto bg-destructive/10 p-3 rounded-full w-fit mb-4">
+              <XCircle className="h-8 w-8 text-destructive" />
+            </div>
+            <CardTitle className="text-destructive">Invalid Certificate</CardTitle>
+            <CardDescription>
+              The certificate with code <code className="font-mono font-bold">{code}</code> could not be found or verified.
+            </CardDescription>
+          </CardHeader>
+          <CardFooter className="justify-center">
+            <Button asChild variant="outline">
+              <Link href="/">Return Home</Link>
+            </Button>
+          </CardFooter>
+        </Card>
+      </div>
+    )
   }
 
   return (
-    <div className="min-h-screen bg-background py-12">
-      <div className="mx-auto max-w-3xl px-4">
-        <div className="mb-8 text-center">
-          <h1 className="text-4xl font-bold text-foreground">Certificate Verification</h1>
-        </div>
+    <div className="min-h-screen flex items-center justify-center bg-background p-4 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-primary/20 via-background to-background">
+      <Card className="w-full max-w-2xl border-primary/20 shadow-2xl">
+        <CardHeader className="text-center border-b border-border/50 pb-8">
+          <div className="mx-auto bg-primary/10 p-4 rounded-full w-fit mb-6 ring-8 ring-primary/5">
+            <Award className="h-12 w-12 text-primary" />
+          </div>
+          <Badge className="mx-auto mb-4 px-4 py-1 text-sm bg-emerald-500/10 text-emerald-600 border-emerald-500/20 hover:bg-emerald-500/20">
+            <CheckCircle2 className="mr-2 h-4 w-4" />
+            Verified Authentic
+          </Badge>
+          <CardTitle className="text-3xl font-bold">{certificate.hackathonTitle}</CardTitle>
+          <CardDescription className="text-lg mt-2">
+            Certificate of {certificate.type}
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-8 pt-8 px-8 md:px-12">
+          <div className="text-center space-y-2">
+            <p className="text-muted-foreground text-sm uppercase tracking-wide">Presented To</p>
+            <p className="text-2xl font-bold text-foreground">{certificate.userName}</p>
+          </div>
 
-        {!isValid ? (
-          <Card className="border-red-500 bg-card">
-            <CardContent className="py-12 text-center">
-              <AlertCircle className="mx-auto h-16 w-16 text-red-500" />
-              <h2 className="mt-4 text-2xl font-bold text-foreground">Invalid Certificate</h2>
-              <p className="mt-2 text-muted-foreground">
-                The certificate code <code className="rounded bg-secondary px-2 py-1 font-mono">{code}</code> could not be verified.
-              </p>
-              <Link href="/" className="mt-4 inline-block text-primary hover:underline">
-                Go to Home →
-              </Link>
-            </CardContent>
-          </Card>
-        ) : certificate ? (
-          <Card className="border-green-500 bg-card">
-            <CardContent className="py-12">
-              <div className="text-center">
-                <CheckCircle className="mx-auto h-12 w-12 text-green-500" />
-                <h2 className="mt-4 text-2xl font-bold text-green-500">Verified Certificate</h2>
-              </div>
-
-              <div className="mx-auto mt-8 max-w-2xl rounded-lg border-4 border-primary bg-gradient-to-br from-primary/5 to-primary/10 p-8">
-                <div className="text-center">
-                  {getCertificateIcon(certificate.type)}
-                  <h3 className="mt-4 text-3xl font-bold text-foreground">Certificate of {getCertificateLabel(certificate)}</h3>
-                  <p className="mt-4 text-lg text-muted-foreground">This certifies that</p>
-                  <h4 className="mt-2 text-4xl font-bold text-primary">{certificate.userName}</h4>
-                  <p className="mt-4 text-lg text-muted-foreground">
-                    has {certificate.type === "participation" ? "participated in" : certificate.type === "winner" ? "won" : "completed"}
-                  </p>
-                  <h5 className="mt-2 text-2xl font-bold text-foreground">{certificate.hackathonTitle}</h5>
-
-                  {certificate.rank && (
-                    <Badge variant="default" className="mt-4 text-lg">
-                      {certificate.rank === 1 ? "🥇 " : certificate.rank === 2 ? "🥈 " : "🥉 "}
-                      {certificate.rank === 1 ? "1st" : certificate.rank === 2 ? "2nd" : "3rd"} Place
-                    </Badge>
-                  )}
-
-                  <p className="mt-6 text-sm text-muted-foreground">
-                    Issued on {new Date(certificate.issuedAt).toLocaleDateString("en-US", { 
-                      year: "numeric", 
-                      month: "long", 
-                      day: "numeric" 
-                    })}
-                  </p>
-
-                  <div className="mt-6 border-t pt-4">
-                    <p className="text-xs text-muted-foreground">Verification Code</p>
-                    <code className="mt-1 inline-block rounded bg-secondary px-3 py-1 font-mono text-sm">
-                      {certificate.verificationCode}
-                    </code>
-                  </div>
-                </div>
-              </div>
-
-              <p className="mt-8 text-center text-sm text-muted-foreground">
-                This certificate has been digitally verified and is authentic.
-              </p>
-            </CardContent>
-          </Card>
-        ) : null}
-      </div>
+          <div className="grid grid-cols-2 gap-4 text-center">
+            <div className="p-4 rounded-lg bg-secondary/30">
+              <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Issued Date</p>
+              <p className="font-medium">{new Date(certificate.issuedAt).toLocaleDateString('en-US')}</p>
+            </div>
+            <div className="p-4 rounded-lg bg-secondary/30">
+              <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Verification Code</p>
+              <code className="font-mono font-bold text-primary">{certificate.verificationCode}</code>
+            </div>
+          </div>
+        </CardContent>
+        <CardFooter className="justify-center border-t border-border/50 pt-8 pb-8">
+          <p className="text-xs text-muted-foreground text-center max-w-sm">
+            This certificate was electronically issued by HackHub and can be verified at any time using the code above.
+          </p>
+        </CardFooter>
+      </Card>
     </div>
   )
 }

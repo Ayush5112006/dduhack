@@ -6,14 +6,13 @@ import path from 'path'
 
 export const runtime = 'nodejs'
 
-export async function GET(_req: Request, { params }: { params: { hackathonId: string } }) {
+export async function GET(_req: Request, { params }: { params: Promise<{ hackathonId: string }> }) {
   try {
+    const { hackathonId } = await params
     const session = await getSession()
     if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
-
-    const hackathonId = params.hackathonId
     const db = getPrismaClient(session.userRole)
 
     const cert = await db.certificate.findUnique({

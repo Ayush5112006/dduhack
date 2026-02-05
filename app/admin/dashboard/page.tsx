@@ -1,8 +1,8 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { DashboardSidebar } from "@/components/dashboard/sidebar"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { AdminSidebar } from "@/components/admin/admin-sidebar-new"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
@@ -26,7 +26,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Users, Trophy, FileText, DollarSign } from "lucide-react"
+import { Users, Trophy, FileText, DollarSign, Search, Bell, MoreVertical } from "lucide-react"
 import { useToast } from "@/components/toast-provider"
 import Link from "next/link"
 
@@ -218,30 +218,30 @@ export default function AdminDashboardPage() {
   const totalPrizePool = hackathons.reduce((sum, h) => sum + (h.prizeAmount || 0), 0)
 
   const stats = [
-    { 
-      title: "Total Users", 
-      value: users.length, 
+    {
+      title: "Total Users",
+      value: users.length,
       icon: Users,
       trend: analytics?.userGrowth || 0,
       description: "Platform users"
     },
-    { 
-      title: "Active Hackathons", 
-      value: hackathons.filter((h) => h.status === "live").length, 
+    {
+      title: "Active Hackathons",
+      value: hackathons.filter((h) => h.status === "live").length,
       icon: Trophy,
       trend: analytics?.hackathonGrowth || 0,
       description: "Currently running"
     },
-    { 
-      title: "Total Submissions", 
-      value: totalSubmissions, 
+    {
+      title: "Total Submissions",
+      value: totalSubmissions,
       icon: FileText,
       trend: 0,
       description: "All time"
     },
-    { 
-      title: "Prize Pool", 
-      value: `$${(totalPrizePool / 1000).toFixed(1)}K`, 
+    {
+      title: "Prize Pool",
+      value: `$${(totalPrizePool / 1000).toFixed(1)}K`,
       icon: DollarSign,
       trend: 0,
       description: "Total prizes"
@@ -253,64 +253,89 @@ export default function AdminDashboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <DashboardSidebar type="admin" />
-      <main className="ml-64 p-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-foreground">Admin Dashboard</h1>
-          <p className="mt-2 text-muted-foreground">Manage users, hackathons, and platform settings</p>
-        </div>
-
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          {stats.map((stat) => (
-            <Card key={stat.title} className="border-border bg-card">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div className="rounded-lg bg-primary/10 p-3">
-                    <stat.icon className="h-6 w-6 text-primary" />
-                  </div>
-                  {stat.trend !== 0 && (
-                    <Badge variant="outline" className="gap-1">
-                      <span className="inline-block h-3 w-3 rounded-full bg-muted-foreground/40" />
-                      {stat.trend > 0 ? '+' : ''}{stat.trend}%
-                    </Badge>
-                  )}
-                </div>
-                <div className="mt-4">
-                  <p className="text-sm font-medium text-muted-foreground">{stat.title}</p>
-                  <p className="mt-1 text-2xl font-bold text-foreground">{typeof stat.value === 'number' ? stat.value : stat.value}</p>
-                  <p className="mt-1 text-xs text-muted-foreground">{stat.description}</p>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-
-        <Card className="mt-6 border-border bg-card">
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle>Platform Management</CardTitle>
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
+      <AdminSidebar />
+      <main className="lg:ml-64 p-6 lg:p-8 space-y-8">
+        {/* Top Bar */}
+        <div className="flex items-center justify-between">
+          <div className="space-y-1">
+            <h1 className="text-4xl font-bold bg-gradient-to-r from-cyan-400 to-purple-400 bg-clip-text text-transparent">
+              Admin Dashboard
+            </h1>
+            <p className="text-slate-400">Manage users, hackathons, and platform settings</p>
+          </div>
+          <div className="flex items-center gap-4">
+            <div className="hidden md:flex items-center gap-2 bg-slate-900/50 border border-slate-700/50 rounded-lg px-4 py-2 backdrop-blur-xl">
+              <Search className="h-4 w-4 text-slate-400" />
+              <input type="text" placeholder="Search..." className="bg-transparent text-sm text-white placeholder-slate-500 outline-none" />
             </div>
+            <button className="p-2 rounded-lg bg-slate-900/50 border border-slate-700/50 text-slate-400 hover:text-cyan-400 transition-colors">
+              <Bell className="h-5 w-5" />
+            </button>
+            <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-cyan-500 to-purple-600 flex items-center justify-center text-white font-bold text-sm">
+              A
+            </div>
+          </div>
+        </div>
+
+        {/* Stats Grid */}
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          {stats.map((stat) => {
+            const colors = [
+              { gradient: "from-cyan-500 to-blue-500", bg: "from-cyan-500/10 to-blue-500/10" },
+              { gradient: "from-green-500 to-emerald-500", bg: "from-green-500/10 to-emerald-500/10" },
+              { gradient: "from-purple-500 to-pink-500", bg: "from-purple-500/10 to-pink-500/10" },
+              { gradient: "from-orange-500 to-red-500", bg: "from-orange-500/10 to-red-500/10" },
+            ]
+            const color = colors[stats.indexOf(stat)]
+            return (
+              <div key={stat.title} className={`relative group overflow-hidden rounded-xl bg-gradient-to-br ${color.bg} border border-slate-700/50 backdrop-blur-xl p-6 hover:border-slate-600/80 transition-all duration-300`}>
+                <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/0 via-cyan-500/0 to-purple-500/0 group-hover:from-cyan-500/5 group-hover:via-cyan-500/5 group-hover:to-purple-500/5 transition-all" />
+                <div className="relative">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className={`p-3 rounded-lg bg-gradient-to-br ${color.gradient} shadow-lg shadow-current/20`}>
+                      <stat.icon className="h-6 w-6 text-white" />
+                    </div>
+                    {stat.trend !== 0 && (
+                      <Badge variant="outline" className="gap-1 bg-slate-900/50 border-slate-700/50 text-cyan-400">
+                        <span className="inline-block h-3 w-3 rounded-full bg-cyan-500/40" />
+                        {stat.trend > 0 ? '+' : ''}{stat.trend}%
+                      </Badge>
+                    )}
+                  </div>
+                  <p className="text-sm font-medium text-slate-400 mb-1">{stat.title}</p>
+                  <p className="text-3xl font-bold text-white">{typeof stat.value === 'number' ? stat.value : stat.value}</p>
+                  <p className="text-xs text-slate-500 mt-2">{stat.description}</p>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+
+        {/* Platform Management */}
+        <Card className="border-slate-700/50 bg-slate-900/50 backdrop-blur-xl">
+          <CardHeader className="border-b border-slate-700/50">
+            <CardTitle className="text-white">Platform Management</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-0">
             <Tabs defaultValue="users" className="w-full">
-              <TabsList>
-                <TabsTrigger value="users">Users</TabsTrigger>
-                <TabsTrigger value="hackathons">Hackathons</TabsTrigger>
+              <TabsList className="bg-slate-900/50 border-b border-slate-700/50 rounded-none w-full justify-start">
+                <TabsTrigger value="users" className="text-slate-400 data-[state=active]:text-cyan-400 data-[state=active]:border-b-2 data-[state=active]:border-cyan-500 rounded-none">Users</TabsTrigger>
+                <TabsTrigger value="hackathons" className="text-slate-400 data-[state=active]:text-cyan-400 data-[state=active]:border-b-2 data-[state=active]:border-cyan-500 rounded-none">Hackathons</TabsTrigger>
               </TabsList>
 
-              <div className="mt-6 flex gap-3">
+              <div className="mt-6 flex gap-3 px-6">
                 <div className="relative flex-1">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">🔍</span>
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 h-4 w-4" />
                   <Input
                     placeholder="Search..."
-                    className="pl-10"
+                    className="pl-10 bg-slate-900/50 border-slate-700/50 text-white placeholder-slate-500"
                     value={searchQuery}
                     onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchQuery(e.target.value)}
                   />
                 </div>
                 <select
-                  className="rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  className="rounded-md border border-slate-700/50 bg-slate-900/50 px-3 py-2 text-sm text-slate-300 hover:border-slate-600/80 transition-all"
                   value={statusFilter}
                   onChange={(e) => setStatusFilter(e.target.value)}
                 >
@@ -323,57 +348,57 @@ export default function AdminDashboardPage() {
                 </select>
               </div>
 
-              <TabsContent value="users" className="mt-6">
+              <TabsContent value="users" className="mt-6 px-0">
                 {loadingUsers ? (
                   <div className="flex items-center justify-center py-12">
-                    <span className="mr-2 inline-block h-5 w-5 animate-spin rounded-full border-2 border-muted-foreground border-t-transparent" />
-                    <p className="text-muted-foreground">Loading users...</p>
+                    <span className="mr-2 inline-block h-5 w-5 animate-spin rounded-full border-2 border-cyan-500 border-t-transparent" />
+                    <p className="text-slate-400">Loading users...</p>
                   </div>
                 ) : (
                   <div className="overflow-x-auto">
                     <Table>
                       <TableHeader>
-                        <TableRow>
-                          <TableHead>Name</TableHead>
-                          <TableHead>Email</TableHead>
-                          <TableHead>Role</TableHead>
-                          <TableHead>Status</TableHead>
-                          <TableHead>Joined</TableHead>
-                          <TableHead>Activity</TableHead>
-                          <TableHead className="text-right">Actions</TableHead>
+                        <TableRow className="border-slate-700/50 hover:bg-transparent">
+                          <TableHead className="text-slate-400">Name</TableHead>
+                          <TableHead className="text-slate-400">Email</TableHead>
+                          <TableHead className="text-slate-400">Role</TableHead>
+                          <TableHead className="text-slate-400">Status</TableHead>
+                          <TableHead className="text-slate-400">Joined</TableHead>
+                          <TableHead className="text-slate-400">Activity</TableHead>
+                          <TableHead className="text-right text-slate-400">Actions</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {filteredUsers.map((user) => (
-                          <TableRow key={user.id}>
-                            <TableCell className="font-medium text-foreground">{user.name}</TableCell>
-                            <TableCell className="text-muted-foreground">{user.email}</TableCell>
+                          <TableRow key={user.id} className="border-slate-700/50 hover:bg-slate-800/30 transition-colors">
+                            <TableCell className="font-medium text-white">{user.name}</TableCell>
+                            <TableCell className="text-slate-300">{user.email}</TableCell>
                             <TableCell>
-                              <Badge variant="outline" className="capitalize">
+                              <Badge variant="outline" className="capitalize bg-slate-900/50 border-slate-700/50 text-slate-300">
                                 {user.role}
                               </Badge>
                             </TableCell>
                             <TableCell>
                               <Badge
                                 variant={user.status === "active" ? "default" : "secondary"}
-                                className={user.status === "active" ? "bg-emerald-500/10 text-emerald-600" : "bg-red-500/10 text-red-600"}
+                                className={user.status === "active" ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/30" : "bg-red-500/20 text-red-400 border-red-500/30"}
                               >
                                 {user.status}
                               </Badge>
                             </TableCell>
-                            <TableCell className="text-muted-foreground">{formatDate(user.createdAt)}</TableCell>
-                            <TableCell className="text-muted-foreground">
+                            <TableCell className="text-slate-300">{formatDate(user.createdAt)}</TableCell>
+                            <TableCell className="text-slate-300">
                               {user.registrations} regs • {user.submissions} subs
                             </TableCell>
                             <TableCell className="text-right">
                               <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
-                                  <Button variant="ghost" size="icon">
-                                    <span className="h-4 w-4">⋯</span>
+                                  <Button variant="ghost" size="icon" className="hover:bg-slate-800/50 text-slate-400">
+                                    <MoreVertical className="h-4 w-4" />
                                   </Button>
                                 </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                  <DropdownMenuItem 
+                                <DropdownMenuContent align="end" className="bg-slate-900 border-slate-700/50">
+                                  <DropdownMenuItem
                                     onClick={() => toggleUserStatus(user.id, user.status)}
                                     className="gap-2"
                                   >
@@ -400,58 +425,57 @@ export default function AdminDashboardPage() {
                 )}
               </TabsContent>
 
-              <TabsContent value="hackathons" className="mt-6">
+              <TabsContent value="hackathons" className="mt-6 px-0">
                 {loadingHackathons ? (
                   <div className="flex items-center justify-center py-12">
-                    <span className="mr-2 inline-block h-5 w-5 animate-spin rounded-full border-2 border-muted-foreground border-t-transparent" />
-                    <p className="text-muted-foreground">Loading hackathons...</p>
+                    <span className="mr-2 inline-block h-5 w-5 animate-spin rounded-full border-2 border-cyan-500 border-t-transparent" />
+                    <p className="text-slate-400">Loading hackathons...</p>
                   </div>
                 ) : (
                   <div className="overflow-x-auto">
                     <Table>
                       <TableHeader>
-                        <TableRow>
-                          <TableHead>Title</TableHead>
-                          <TableHead>Organizer</TableHead>
-                          <TableHead>Status</TableHead>
-                          <TableHead>Category</TableHead>
-                          <TableHead>Prize</TableHead>
-                          <TableHead>Participants</TableHead>
-                          <TableHead className="text-right">Actions</TableHead>
+                        <TableRow className="border-slate-700/50 hover:bg-transparent">
+                          <TableHead className="text-slate-400">Title</TableHead>
+                          <TableHead className="text-slate-400">Organizer</TableHead>
+                          <TableHead className="text-slate-400">Status</TableHead>
+                          <TableHead className="text-slate-400">Category</TableHead>
+                          <TableHead className="text-slate-400">Prize</TableHead>
+                          <TableHead className="text-slate-400">Participants</TableHead>
+                          <TableHead className="text-right text-slate-400">Actions</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {filteredHackathons.map((hackathon) => (
-                          <TableRow key={hackathon.id}>
-                            <TableCell className="font-medium text-foreground">{hackathon.title}</TableCell>
-                            <TableCell className="text-muted-foreground">{hackathon.organizer}</TableCell>
+                          <TableRow key={hackathon.id} className="border-slate-700/50 hover:bg-slate-800/30 transition-colors">
+                            <TableCell className="font-medium text-white">{hackathon.title}</TableCell>
+                            <TableCell className="text-slate-300">{hackathon.organizer}</TableCell>
                             <TableCell>
                               <Badge
                                 variant={hackathon.status === "live" ? "default" : "secondary"}
-                                className={hackathon.status === "live" ? "bg-emerald-500/10 text-emerald-600" : ""}
+                                className={hackathon.status === "live" ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/30" : "bg-slate-900/50 border-slate-700/50 text-slate-300"}
                               >
                                 {hackathon.status}
                               </Badge>
                             </TableCell>
                             <TableCell>
-                              <Badge variant="outline">{hackathon.category}</Badge>
+                              <Badge variant="outline" className="bg-slate-900/50 border-slate-700/50 text-slate-300">{hackathon.category}</Badge>
                             </TableCell>
-                            <TableCell className="font-medium">${hackathon.prizeAmount.toLocaleString()}</TableCell>
-                            <TableCell className="text-muted-foreground">
+                            <TableCell className="font-medium text-white">${hackathon.prizeAmount.toLocaleString('en-US')}</TableCell>
+                            <TableCell className="text-slate-300">
                               {hackathon.registrations} regs • {hackathon.submissions} subs
                             </TableCell>
                             <TableCell className="text-right">
                               <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
-                                  <Button variant="ghost" size="icon">
-                                    <span className="h-4 w-4">⋯</span>
+                                  <Button variant="ghost" size="icon" className="hover:bg-slate-800/50 text-slate-400">
+                                    <MoreVertical className="h-4 w-4" />
                                   </Button>
                                 </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
+                                <DropdownMenuContent align="end" className="bg-slate-900 border-slate-700/50">
                                   <DropdownMenuItem asChild className="gap-2">
                                     <Link href={`/hackathons/${hackathon.id}`}>
-                                      <span className="h-4 w-4">👁️</span>
-                                      View
+                                      👁️ View
                                     </Link>
                                   </DropdownMenuItem>
                                   <DropdownMenuItem

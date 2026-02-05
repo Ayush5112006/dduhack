@@ -212,9 +212,9 @@ export function HackathonTabs({ hackathon, isOrganizer = false }: HackathonTabsP
               {hackathon.description}
             </p>
             <p className="mt-4 text-muted-foreground">
-              Join thousands of developers, designers, and innovators from around the world in this 
-              exciting hackathon. Whether you&apos;re a seasoned professional or just starting out, 
-              this is your chance to build something amazing, learn new skills, and connect with 
+              Join thousands of developers, designers, and innovators from around the world in this
+              exciting hackathon. Whether you&apos;re a seasoned professional or just starting out,
+              this is your chance to build something amazing, learn new skills, and connect with
               like-minded individuals.
             </p>
             <h3 className="mt-6 text-lg font-semibold text-foreground">What you&apos;ll gain:</h3>
@@ -234,11 +234,14 @@ export function HackathonTabs({ hackathon, isOrganizer = false }: HackathonTabsP
           </CardHeader>
           <CardContent>
             <div className="flex flex-wrap gap-2">
-              {hackathon.tags.map((tag) => (
-                <Badge key={tag} variant="secondary">
-                  {tag}
-                </Badge>
-              ))}
+              {(() => {
+                const tags = Array.isArray(hackathon.tags) ? hackathon.tags : (typeof hackathon.tags === 'string' ? (() => { try { return JSON.parse(hackathon.tags); } catch { return []; } })() : []);
+                return tags.map((tag: string) => (
+                  <Badge key={tag} variant="secondary">
+                    {tag}
+                  </Badge>
+                ));
+              })()}
             </div>
           </CardContent>
         </Card>

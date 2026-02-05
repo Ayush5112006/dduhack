@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { createSession } from "@/lib/session"
+import { createSecureSession, getSessionFingerprint } from "@/lib/secure-session"
 import { getPrismaClient } from "@/lib/prisma-multi-db"
 import bcrypt from "bcrypt"
 import { 
@@ -112,24 +112,37 @@ export async function POST(request: NextRequest) {
     // Clear login attempts on successful login
     clearLoginAttempts(email)
 
-    // Create session
-    const session = await createSession({
+    // Create session fingerprint from user agent and accept language
+    const userAgent = request.headers.get("user-agent") || ""
+    const acceptLanguage = request.headers.get("accept-language") || ""
+    const fingerprint = getSessionFingerprint(userAgent, acceptLanguage)
+
+    // Create secure session with all security features
+    const session = await createSecureSession({
       userId: user.id,
       userEmail: user.email,
       userName: user.name,
       userRole: user.role as "participant" | "organizer" | "admin",
-    })
+    }, fingerprint)
 
     logSecurityEvent({
       type: "login_success",
       email,
       ip: clientIP,
-      userAgent: request.headers.get("user-agent") || undefined,
+      userAgent: userAgent || undefined,
     })
 
     return NextResponse.json({
       success: true,
-      session,
+      session: {
+        token: session.token,
+        userId: session.userId,
+        userEmail: session.userEmail,
+        userName: session.userName,
+        userRole: session.userRole,
+        expiresAt: session.expiresAt,
+        absoluteExpiresAt: session.absoluteExpiresAt,
+      },
       user: {
         userId: session.userId,
         userEmail: session.userEmail,
@@ -142,4 +155,3 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Failed to login" }, { status: 500 })
   }
 }
-

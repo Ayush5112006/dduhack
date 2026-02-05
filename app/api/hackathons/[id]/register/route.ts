@@ -59,11 +59,16 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
         return NextResponse.json({ error: "Team name is required for team registrations" }, { status: 400 })
       }
 
+      // Generate a unique 6-character code
+      const { nanoid } = await import("nanoid")
+      const code = nanoid(6).toUpperCase()
+
       // Create team
       const team = await prisma.team.create({
         data: {
           hackathonId: id,
           name: teamName,
+          code: code,
           leaderId: session.userId,
           leaderEmail: session.userEmail,
         },
@@ -77,7 +82,8 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
           teamId: team.id,
           userId: session.userId,
           email: session.userEmail,
-          status: "leader",
+          status: "accepted", // Leader is always accepted
+          role: "leader"
         },
       })
 
@@ -97,6 +103,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
                   userId: user.id,
                   email: user.email,
                   status: "invited",
+                  role: "member"
                 },
               })
             }

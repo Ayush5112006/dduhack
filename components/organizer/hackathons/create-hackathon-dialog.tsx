@@ -14,6 +14,7 @@ import { HackathonSummary } from "./hackathon-card"
 const categories = ["AI", "Blockchain", "Web", "Mobile", "Security", "Data", "Health", "Game"]
 const modes = ["Online", "Offline", "Hybrid"]
 const difficulties = ["Beginner", "Intermediate", "Advanced"]
+const organizationTypes = ["Company", "College", "Community"]
 
 type HackathonFormValues = {
   title: string
@@ -29,10 +30,16 @@ type HackathonFormValues = {
   registrationDeadline: string
   eligibility: string
   banner: string
+  organizationType: string
+  organizationLogo: string
   tags: string
   isFree: boolean
   featured: boolean
+  allowTeams: boolean
+  minTeamSize: string
+  maxTeamSize: string
   problemStatementPdf: File | null
+  organizationLogoFile: File | null
 }
 
 interface Props {
@@ -73,10 +80,16 @@ export function CreateHackathonDialog({ trigger, open, onOpenChange, onSuccess, 
     registrationDeadline: formatDateInput(hackathon?.registrationDeadline),
     eligibility: "",
     banner: hackathon?.banner || "",
+    organizationType: organizationTypes[0],
+    organizationLogo: "",
     tags: hackathon?.tags?.join(", ") || "",
     isFree: true,
     featured: false,
+    allowTeams: true,
+    minTeamSize: "2",
+    maxTeamSize: "5",
     problemStatementPdf: null,
+    organizationLogoFile: null,
   })
 
   const controlledOpen = open ?? internalOpen
@@ -210,7 +223,7 @@ export function CreateHackathonDialog({ trigger, open, onOpenChange, onSuccess, 
         const pdfJson = await pdfRes.json()
         if (!pdfRes.ok) {
           console.warn("PDF upload failed:", pdfJson.error)
-          addToast("warning", "Hackathon created but PDF upload failed")
+          addToast("error", "Hackathon created but PDF upload failed")
         } else {
           addToast("success", "PDF uploaded successfully")
         }
@@ -322,6 +335,61 @@ export function CreateHackathonDialog({ trigger, open, onOpenChange, onSuccess, 
               />
             </div>
             <div className="space-y-2">
+              <Label htmlFor="organizationType">Organization Type *</Label>
+              <Select value={form.organizationType} onValueChange={(v) => handleChange("organizationType", v)}>
+                <SelectTrigger id="organizationType">
+                  <SelectValue placeholder="Select type" />
+                </SelectTrigger>
+                <SelectContent>
+                  {organizationTypes.map((type) => (
+                    <SelectItem key={type} value={type}>
+                      {type}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2 md:col-span-2">
+              <Label htmlFor="organizationLogo">Organization Logo</Label>
+              <div className="flex items-center gap-4">
+                <Input
+                  id="organizationLogo"
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0]
+                    if (file) {
+                      if (!file.type.startsWith("image/")) {
+                        addToast("error", "Only image files are allowed")
+                        return
+                      }
+                      if (file.size > 5 * 1024 * 1024) {
+                        addToast("error", "File size must be less than 5MB")
+                        return
+                      }
+                      handleChange("organizationLogoFile", file)
+                    }
+                  }}
+                  className="cursor-pointer"
+                />
+                {form.organizationLogoFile && (
+                  <div className="flex items-center gap-2">
+                    <div className="w-16 h-16 rounded-xl bg-white/10 border border-white/20 flex items-center justify-center overflow-hidden">
+                      <img
+                        src={URL.createObjectURL(form.organizationLogoFile)}
+                        alt="Logo preview"
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                    <span className="text-xs text-green-600 font-medium">
+                      ✓ {form.organizationLogoFile.name}
+                    </span>
+                  </div>
+                )}
+              </div>
+              <p className="text-xs text-muted-foreground">Upload your organization logo (max 5MB). Will be displayed on hackathon page.</p>
+            </div>
+            <div className="space-y-2">
               <Label htmlFor="banner">Banner URL</Label>
               <Input
                 id="banner"
@@ -410,7 +478,15 @@ export function CreateHackathonDialog({ trigger, open, onOpenChange, onSuccess, 
             </div>
           </div>
 
+
           <div className="grid grid-cols-2 gap-4">
+            <div className="flex items-center justify-between rounded-lg border border-border/60 bg-muted/40 p-3">
+              <div>
+                <p className="text-sm font-medium">Allow Team Participation</p>
+                <p className="text-xs text-muted-foreground">Enable teams to register.</p>
+              </div>
+              <Switch checked={form.allowTeams} onCheckedChange={(val) => handleChange("allowTeams", val)} />
+            </div>
             <div className="flex items-center justify-between rounded-lg border border-border/60 bg-muted/40 p-3">
               <div>
                 <p className="text-sm font-medium">Free to join</p>
@@ -426,6 +502,34 @@ export function CreateHackathonDialog({ trigger, open, onOpenChange, onSuccess, 
               <Switch checked={form.featured} onCheckedChange={(val) => handleChange("featured", val)} />
             </div>
           </div>
+
+          {form.allowTeams && (
+            <div className="grid grid-cols-2 gap-4 p-4 rounded-lg border border-border/60 bg-muted/20">
+              <div className="space-y-2">
+                <Label htmlFor="minTeamSize">Min Team Size</Label>
+                <Input
+                  id="minTeamSize"
+                  type="number"
+                  min="2"
+                  value={form.minTeamSize}
+                  onChange={(e) => handleChange("minTeamSize", e.target.value)}
+                  placeholder="2"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="maxTeamSize">Max Team Size</Label>
+                <Input
+                  id="maxTeamSize"
+                  type="number"
+                  min="2"
+                  value={form.maxTeamSize}
+                  onChange={(e) => handleChange("maxTeamSize", e.target.value)}
+                  placeholder="5"
+                />
+              </div>
+            </div>
+          )}
+
 
           <DialogFooter className="gap-2">
             <Button type="button" variant="outline" onClick={() => setOpen(false)} disabled={loading || uploading}>

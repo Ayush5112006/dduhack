@@ -35,7 +35,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     if (body.description !== undefined) hackathon.description = body.description
     if (body.prizeAmount !== undefined) {
       hackathon.prizeAmount = Number(body.prizeAmount)
-      hackathon.prize = `$${Number(body.prizeAmount).toLocaleString()}`
+      hackathon.prize = `$${Number(body.prizeAmount).toLocaleString('en-US')}`
     }
     if (body.registrationDeadline) hackathon.registrationDeadline = body.registrationDeadline
     if (body.tags) hackathon.tags = Array.isArray(body.tags) ? body.tags : hackathon.tags

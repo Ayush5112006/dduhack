@@ -103,7 +103,6 @@ export async function POST(request: NextRequest) {
         title,
         message,
         link: actionUrl,
-        hackathonId,
         read: false,
       },
     })

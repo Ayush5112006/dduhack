@@ -1,4 +1,4 @@
-import { Navbar } from "@/components/navbar"
+
 import { Footer } from "@/components/footer"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -9,6 +9,8 @@ import {
   Users,
   MapPin,
   Share2,
+  CheckCircle,
+  LogIn,
 } from "lucide-react"
 import { prisma } from "@/lib/prisma"
 import { getSession } from "@/lib/session"
@@ -16,6 +18,10 @@ import { SmartRegistrationForm } from "@/components/smart-registration/smart-reg
 import { SubmissionForm } from "@/components/submissions/submission-form"
 import Link from "next/link"
 import { notFound } from "next/navigation"
+import { isUserInTeam, getTeamDetails } from "@/lib/team-utils"
+import { ClientOnly } from "@/components/client-only"
+
+export const revalidate = 60 // Revalidate every 60 seconds
 
 async function getHackathonDetail(id: string) {
   const hackathon = await prisma.hackathon.findUnique({
@@ -53,6 +59,10 @@ const computeStatus = (startDate: Date, endDate: Date): string => {
   return "live"
 }
 
+const isRegistrationOpen = (registrationDeadline: Date): boolean => {
+  return new Date() <= registrationDeadline
+}
+
 export default async function HackathonDetailPage({
   params,
 }: {
@@ -70,6 +80,7 @@ export default async function HackathonDetailPage({
   const isAuthenticated = !!session
   const isRegistered = userId ? await checkUserRegistration(id, userId) : false
   const status = computeStatus(hackathon.startDate, hackathon.endDate)
+  const registrationIsOpen = isRegistrationOpen(hackathon.registrationDeadline)
 
   // Fetch user profile if authenticated
   let user = null
@@ -94,10 +105,24 @@ export default async function HackathonDetailPage({
     return `${startStr} - ${endStr}`
   }
 
+  // Fetch team details if user is in a team
+  let teamData = null
+  if (userId) {
+    const { inTeam, teamId } = await isUserInTeam(userId, id)
+    if (inTeam && teamId) {
+      teamData = await getTeamDetails(teamId)
+    }
+  }
+
+  const teamMode = hackathon.allowTeams
+  const teamId = teamData?.id || ""
+  const teamName = teamData?.name || ""
+  const teamMembers = teamData?.members?.length || 0
+
   return (
     <div className="min-h-screen bg-background">
-      <Navbar />
-      <main>
+      {/* Navbar handled by MainLayout */}
+      <div className="flex-1">
         <div className="mx-auto max-w-7xl px-4 py-12 lg:px-8">
           <div className="grid gap-8 lg:grid-cols-3">
             <div className="lg:col-span-2">
@@ -141,7 +166,7 @@ export default async function HackathonDetailPage({
                         <div>
                           <p className="text-sm text-muted-foreground">Prize Pool</p>
                           <p className="text-lg font-semibold text-foreground">
-                            ${hackathon.prizeAmount.toLocaleString()}
+                            ${hackathon.prizeAmount.toLocaleString('en-US')}
                           </p>
                         </div>
                       </CardContent>
@@ -191,18 +216,21 @@ export default async function HackathonDetailPage({
                   </div>
                 </div>
 
-                {hackathon.tags && hackathon.tags.length > 0 && (
-                  <div>
-                    <h2 className="text-xl font-semibold text-foreground">Topics</h2>
-                    <div className="mt-3 flex flex-wrap gap-2">
-                      {(hackathon.tags as string[]).map((tag) => (
-                        <Badge key={tag} variant="outline">
-                          {tag}
-                        </Badge>
-                      ))}
+                {(() => {
+                  const tags = Array.isArray(hackathon.tags) ? hackathon.tags : (typeof hackathon.tags === 'string' ? (() => { try { return JSON.parse(hackathon.tags) as string[]; } catch { return [] as string[]; } })() : [] as string[]);
+                  return tags && tags.length > 0 ? (
+                    <div>
+                      <h2 className="text-xl font-semibold text-foreground">Topics</h2>
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        {tags.map((tag: string) => (
+                          <Badge key={tag} variant="outline">
+                            {tag}
+                          </Badge>
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                )}
+                  ) : null;
+                })()}
 
                 {hackathon.problemStatementPdf && (
                   <div>
@@ -219,93 +247,161 @@ export default async function HackathonDetailPage({
                         </a>
                       </Button>
                     </div>
+                    {/* End of Resources Section */}
                   </div>
                 )}
-              </div>
-            </div>
+                {/* End of mt-8 space-y-6 */}
 
-            <div>
-              <Card className="sticky top-8 border-border bg-card">
-                <CardHeader>
-                  <CardTitle>Register for Event</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <p className="text-sm font-medium text-foreground">Event Status</p>
-                    <Badge
-                      variant="outline"
-                      className={
-                        status === "live"
-                          ? "w-full justify-center bg-emerald-500/10 text-emerald-600"
-                          : status === "upcoming"
-                            ? "w-full justify-center bg-blue-500/10 text-blue-600"
-                            : "w-full justify-center bg-slate-500/10 text-slate-600"
-                      }
-                    >
-                      {status === "live"
-                        ? "Registration Open"
-                        : status === "upcoming"
-                          ? "Coming Soon"
-                          : "Event Closed"}
-                    </Badge>
-                  </div>
-
-                  <div className="space-y-2">
-                    <p className="text-sm font-medium text-foreground">Registration Deadline</p>
-                    <p className="text-sm text-muted-foreground">
-                      {formatDate(hackathon.startDate)}
-                    </p>
-                  </div>
-
-                  {isRegistered ? (
-                    <div className="space-y-4">
-                      <div className="rounded-lg bg-emerald-500/10 p-3 text-center text-sm text-emerald-600">
-                        ✓ You're registered for this hackathon
+                {/* New Registration Section */}
+                <div className="mt-8 p-6 rounded-xl border border-primary/20 bg-primary/5 backdrop-blur-sm">
+                  <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                    <div>
+                      <h3 className="text-xl font-bold text-primary">Ready to participate?</h3>
+                      <p className="text-muted-foreground">
+                        Join {hackathon.title} now and showcase your skills!
+                      </p>
+                    </div>
+                    {isRegistered ? (
+                      <Button size="lg" variant="secondary" className="gap-2 font-semibold" disabled>
+                        <CheckCircle className="h-5 w-5" />
+                        Registered
+                      </Button>
+                    ) : registrationIsOpen && isAuthenticated ? (
+                      <div className="w-full sm:w-auto">
+                        <ClientOnly>
+                          <SmartRegistrationForm
+                            hackathonId={id}
+                            hackathonTitle={hackathon.title}
+                            isAuthenticated={isAuthenticated}
+                            userProfile={{
+                              email: user?.email || "",
+                              name: user?.name || "",
+                              phone: user?.phone || "",
+                              university: "",
+                              skills: user?.profile?.skills ? (JSON.parse(user.profile.skills) as string[]) : [],
+                              githubProfile: user?.profile?.github || "",
+                              linkedinProfile: user?.profile?.linkedin || "",
+                            }}
+                          />
+                        </ClientOnly>
                       </div>
-                      {status === "live" && (
-                        <SubmissionForm
-                          hackathonId={id}
-                          hackathonTitle={hackathon.title}
-                          isAuthenticated={isAuthenticated}
-                          isRegistered={true}
-                        />
-                      )}
-                    </div>
-                  ) : status === "live" ? (
-                    <SmartRegistrationForm
-                      hackathonId={id}
-                      hackathonTitle={hackathon.title}
-                      isAuthenticated={isAuthenticated}
-                      userProfile={{
-                        email: user?.email || "",
-                        name: user?.name || "",
-                        phone: user?.profile?.phone || "",
-                        university: user?.profile?.university || "",
-                        skills: user?.profile?.skills ? JSON.parse(user.profile.skills) : [],
-                        githubProfile: user?.profile?.github || "",
-                        linkedinProfile: user?.profile?.linkedin || "",
-                      }}
-                    />
-                  ) : (
-                    <div className="rounded-lg bg-slate-500/10 p-3 text-center text-sm text-slate-600">
-                      Registration is closed for this event
-                    </div>
-                  )}
+                    ) : !isAuthenticated ? (
+                      <Button size="lg" className="w-full sm:w-auto gap-2" asChild>
+                        <Link href={`/auth/login?callbackUrl=/hackathons/${id}`}>
+                          <LogIn className="h-5 w-5" />
+                          Login to Register
+                        </Link>
+                      </Button>
+                    ) : (
+                      <Button size="lg" variant="secondary" disabled>
+                        Registration Closed
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              </div>
+              {/* End of lg:col-span-2 */}
 
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="w-full gap-2"
-                  >
-                    <Share2 className="h-4 w-4" />
-                    Share
-                  </Button>
-                </CardContent>
-              </Card>
+              <div>
+                <Card className="sticky top-8 border-border bg-card">
+                  <CardHeader>
+                    <CardTitle>Register for Event</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                      <p className="text-sm font-medium text-foreground">Event Status</p>
+                      <Badge
+                        variant="outline"
+                        className={
+                          status === "live"
+                            ? "w-full justify-center bg-emerald-500/10 text-emerald-600"
+                            : status === "upcoming"
+                              ? "w-full justify-center bg-blue-500/10 text-blue-600"
+                              : "w-full justify-center bg-slate-500/10 text-slate-600"
+                        }
+                      >
+                        {status === "live"
+                          ? "Registration Open"
+                          : status === "upcoming"
+                            ? "Coming Soon"
+                            : "Event Closed"}
+                      </Badge>
+                    </div>
+
+                    <div className="space-y-2">
+                      <p className="text-sm font-medium text-foreground">Registration Deadline</p>
+                      <p className="text-sm text-muted-foreground">
+                        {formatDate(hackathon.registrationDeadline)}
+                      </p>
+                    </div>
+
+                    {isRegistered ? (
+                      <div className="space-y-4">
+                        <div className="rounded-lg bg-emerald-500/10 p-3 text-center text-sm text-emerald-600">
+                          ✓ You're registered for this hackathon
+                        </div>
+                        {status === "live" && (
+                          <ClientOnly>
+                            <SubmissionForm
+                              hackathonId={id}
+                              hackathonTitle={hackathon.title}
+                              isAuthenticated={isAuthenticated}
+                              isRegistered={true}
+                              teamMode={teamMode}
+                              teamId={teamId}
+                              teamName={teamName}
+                              teamMembers={teamMembers}
+                              minTeamSize={hackathon.minTeamSize}
+                              maxTeamSize={hackathon.maxTeamSize}
+                              hackathonEndDate={hackathon.endDate}
+                            />
+                          </ClientOnly>
+                        )}
+                      </div>
+                    ) : registrationIsOpen && isAuthenticated ? (
+                      <div className="w-full">
+                        <ClientOnly>
+                          <SmartRegistrationForm
+                            hackathonId={id}
+                            hackathonTitle={hackathon.title}
+                            isAuthenticated={isAuthenticated}
+                            userProfile={{
+                              email: user?.email || "",
+                              name: user?.name || "",
+                              phone: user?.phone || "",
+                              university: "", // University not stored in profile currently
+                              skills: user?.profile?.skills ? (JSON.parse(user.profile.skills) as string[]) : [],
+                              githubProfile: user?.profile?.github || "",
+                              linkedinProfile: user?.profile?.linkedin || "",
+                            }}
+                          />
+                        </ClientOnly>
+                      </div>
+                    ) : !isAuthenticated ? (
+                      <div className="rounded-lg bg-blue-500/10 p-3 text-center text-sm text-blue-600">
+                        <p className="mb-2">Please <Link href="/auth/login" className="font-semibold underline">log in</Link> to register for this event</p>
+                      </div>
+                    ) : (
+                      <div className="rounded-lg bg-slate-500/10 p-3 text-center text-sm text-slate-600">
+                        Registration is closed for this event
+                      </div>
+                    )}
+
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full gap-2"
+                    >
+                      <Share2 className="h-4 w-4" />
+                      Share
+                    </Button>
+                  </CardContent>
+                </Card>
+              </div>
             </div>
           </div>
         </div>
-      </main>
+      </div>
       <Footer />
     </div>
   )

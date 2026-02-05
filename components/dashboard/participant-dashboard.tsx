@@ -127,7 +127,7 @@ export function ParticipantDashboard() {
     }).format(new Date(date))
   }
 
-  const [currentTime, setCurrentTime] = useState(Date.now())
+  const [currentTime, setCurrentTime] = useState<number | null>(null)
 
   useEffect(() => {
     setCurrentTime(Date.now())

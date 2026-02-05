@@ -5,6 +5,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
+import { AdminSidebar } from "@/components/admin/admin-sidebar-new"
+import {
   Calendar,
   Clock,
   Users,
@@ -14,6 +23,7 @@ import {
   TrendingUp,
   CheckCircle,
   AlertCircle,
+  ArrowRight,
 } from "lucide-react"
 
 interface Hackathon {
@@ -135,256 +145,184 @@ export default function AdminHackathonsPage() {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">All Hackathons</h1>
-          <p className="text-muted-foreground mt-1">Manage and monitor all organized hackathons</p>
-        </div>
-      </div>
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
+      <AdminSidebar />
 
-      {/* Stats Cards */}
-      {stats && (
-        <div className="grid gap-4 md:grid-cols-4">
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Total Hackathons</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.total}</div>
-              <p className="text-xs text-muted-foreground mt-1">All time</p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Live</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-green-600">{stats.active}</div>
-              <p className="text-xs text-muted-foreground mt-1">Currently running</p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Upcoming</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-blue-600">{stats.upcoming}</div>
-              <p className="text-xs text-muted-foreground mt-1">Scheduled</p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Total Registrations</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.totalRegistrations}</div>
-              <p className="text-xs text-muted-foreground mt-1">
-                ~{stats.averageRegistrationsPerHackathon}/event
-              </p>
-            </CardContent>
-          </Card>
-        </div>
-      )}
-
-      {/* Filters & Controls */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle>Hackathon Filters</CardTitle>
-              <CardDescription>Filter hackathons by status</CardDescription>
-            </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={fetchHackathons}
-              disabled={loading}
-              className="gap-2"
-            >
-              <RefreshCw className="h-4 w-4" />
-              Refresh
-            </Button>
+      {/* Main Content */}
+      <div className="lg:ml-64">
+        <main className="p-6 lg:p-8 space-y-8">
+          {/* Header */}
+          <div className="space-y-2">
+            <h1 className="text-4xl font-bold bg-gradient-to-r from-cyan-400 to-purple-400 bg-clip-text text-transparent">
+              All Hackathons
+            </h1>
+            <p className="text-slate-400">Manage and monitor all organized hackathons across the platform</p>
           </div>
-        </CardHeader>
-        <CardContent>
-          <div className="flex gap-2 flex-wrap">
-            {["all", "upcoming", "live", "past", "closed"].map((status) => (
-              <Button
-                key={status}
-                variant={statusFilter === status ? "default" : "outline"}
-                onClick={() => setStatusFilter(status)}
-                className="capitalize"
-              >
-                {status}
-              </Button>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
 
-      {/* Hackathons Grid */}
-      <div className="space-y-4">
-        <Card>
-          <CardHeader>
-            <CardTitle>Organized Hackathons</CardTitle>
-            <CardDescription>Showing {hackathons.length} hackathons</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {error && (
-              <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded mb-4">
-                {error}
-              </div>
-            )}
-
-            {loading ? (
-              <div className="flex items-center justify-center py-8">
-                <div className="text-muted-foreground">Loading hackathons...</div>
-              </div>
-            ) : hackathons.length === 0 ? (
-              <div className="flex items-center justify-center py-8">
-                <div className="text-center">
-                  <Trophy className="h-12 w-12 text-muted-foreground mx-auto mb-2 opacity-50" />
-                  <div className="text-muted-foreground">No hackathons found</div>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    Create or organize a hackathon to get started
-                  </p>
-                </div>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {hackathons.map((hackathon) => {
-                  const StatusIcon = STATUS_ICONS[hackathon.status]
-                  const statusColor = STATUS_COLORS[hackathon.status]
-                  const bgColor = STATUS_BADGE_COLORS[hackathon.status]
-                  const categoryColor = CATEGORY_COLORS[hackathon.category.toLowerCase()] || CATEGORY_COLORS["general"]
-
-                  return (
-                    <div key={hackathon.id} className={`border rounded-lg p-5 ${bgColor} transition-colors hover:shadow-sm`}>
-                      <div className="space-y-3">
-                        {/* Header */}
-                        <div className="flex items-start justify-between gap-4">
-                          <div className="flex-1">
-                            <h3 className="text-lg font-semibold">{hackathon.title}</h3>
-                            <p className="text-sm text-muted-foreground mt-1">{hackathon.description}</p>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <StatusIcon className="h-5 w-5 text-muted-foreground" />
-                            <Badge className={statusColor}>{hackathon.status}</Badge>
-                            <Badge className={categoryColor}>{hackathon.category}</Badge>
-                          </div>
-                        </div>
-
-                        {/* Organizer Info */}
-                        <div className="flex items-center gap-2 text-sm">
-                          <span className="font-medium">Organizer:</span>
-                          <span>{hackathon.organizer}</span>
-                        </div>
-
-                        {/* Dates & Prize */}
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                          <div className="flex items-center gap-2 text-sm">
-                            <Calendar className="h-4 w-4 text-muted-foreground" />
-                            <span>
-                              {formatDate(hackathon.startDate)} - {formatDate(hackathon.endDate)}
-                            </span>
-                          </div>
-
-                          {hackathon.prizeAmount > 0 && (
-                            <div className="flex items-center gap-2 text-sm">
-                              <Trophy className="h-4 w-4 text-muted-foreground" />
-                              <span className="font-medium">${hackathon.prizeAmount.toLocaleString()}</span>
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Stats Row */}
-                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 pt-3 border-t">
-                          <div className="flex items-center gap-2">
-                            <Users className="h-4 w-4 text-muted-foreground" />
-                            <div>
-                              <div className="text-xs text-muted-foreground">Registrations</div>
-                              <div className="font-semibold">{hackathon.registrations ?? 0}</div>
-                            </div>
-                          </div>
-
-                          <div className="flex items-center gap-2">
-                            <FileText className="h-4 w-4 text-muted-foreground" />
-                            <div>
-                              <div className="text-xs text-muted-foreground">Submissions</div>
-                              <div className="font-semibold">{hackathon.submissions ?? 0}</div>
-                            </div>
-                          </div>
-
-                          <div className="flex items-center gap-2">
-                            <CheckCircle className="h-4 w-4 text-green-600" />
-                            <div>
-                              <div className="text-xs text-muted-foreground">Owner</div>
-                              <div className="font-semibold">{hackathon.ownerId}</div>
-                            </div>
-                          </div>
-
-                          <div className="flex items-center gap-2">
-                            <AlertCircle className="h-4 w-4 text-orange-500" />
-                            <div>
-                              <div className="text-xs text-muted-foreground">Status</div>
-                              <div className="font-semibold">{hackathon.status}</div>
-                            </div>
-                          </div>
+          {/* Stats Cards */}
+          {stats && (
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+              {[
+                { title: "Total Hackathons", value: stats.total, icon: Trophy, color: "from-cyan-500 to-blue-500", bg: "from-cyan-500/10 to-blue-500/10" },
+                { title: "Live", value: stats.active, icon: CheckCircle, color: "from-green-500 to-emerald-500", bg: "from-green-500/10 to-emerald-500/10" },
+                { title: "Upcoming", value: stats.upcoming, icon: Clock, color: "from-purple-500 to-pink-500", bg: "from-purple-500/10 to-pink-500/10" },
+                { title: "Total Registrations", value: stats.totalRegistrations, icon: Users, color: "from-orange-500 to-red-500", bg: "from-orange-500/10 to-red-500/10" },
+              ].map((stat, idx) => {
+                const Icon = stat.icon
+                return (
+                  <div key={idx} className={`relative group overflow-hidden rounded-xl bg-gradient-to-br ${stat.bg} border border-slate-700/50 backdrop-blur-xl p-6 hover:border-slate-600/80 transition-all duration-300`}>
+                    <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/0 via-cyan-500/0 to-purple-500/0 group-hover:from-cyan-500/5 group-hover:via-cyan-500/5 group-hover:to-purple-500/5 transition-all" />
+                    <div className="relative">
+                      <div className="flex items-center justify-between mb-4">
+                        <div className={`p-3 rounded-lg bg-gradient-to-br ${stat.color} shadow-lg shadow-current/20`}>
+                          <Icon className="h-6 w-6 text-white" />
                         </div>
                       </div>
+                      <p className="text-sm font-medium text-slate-400 mb-1">{stat.title}</p>
+                      <p className="text-3xl font-bold text-white">{stat.value}</p>
                     </div>
-                  )
-                })}
+                  </div>
+                )
+              })}
+            </div>
+          )}
+
+          {/* Filters & Controls */}
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>Hackathon Filters</CardTitle>
+                  <CardDescription>Filter hackathons by status</CardDescription>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={fetchHackathons}
+                  disabled={loading}
+                  className="gap-2"
+                >
+                  <RefreshCw className="h-4 w-4" />
+                  Refresh
+                </Button>
               </div>
-            )}
-          </CardContent>
-        </Card>
+            </CardHeader>
+            <CardContent>
+              <div className="flex gap-2 flex-wrap">
+                {["all", "upcoming", "live", "past", "closed"].map((status) => (
+                  <Button
+                    key={status}
+                    variant={statusFilter === status ? "default" : "outline"}
+                    onClick={() => setStatusFilter(status)}
+                    className="capitalize"
+                  >
+                    {status}
+                  </Button>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Hackathons Table */}
+          <Card className="border-slate-700/50 bg-slate-900/50 backdrop-blur-xl">
+            <CardHeader className="border-b border-slate-700/50">
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="text-white">Platform Hackathons</CardTitle>
+                  <CardDescription className="text-slate-400">Manage all hackathons</CardDescription>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={fetchHackathons}
+                  disabled={loading}
+                  className="gap-2 bg-slate-900/50 border-cyan-500/30 text-cyan-400 hover:bg-slate-800/50 hover:border-cyan-500/50"
+                >
+                  <RefreshCw className="h-4 w-4" />
+                  Refresh
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent className="p-0">
+              {/* Status Filters */}
+              <div className="border-b border-slate-700/50 px-6 py-4">
+                <div className="flex gap-2 flex-wrap">
+                  {["all", "upcoming", "live", "past", "closed"].map((status) => (
+                    <Button
+                      key={status}
+                      variant={statusFilter === status ? "default" : "outline"}
+                      onClick={() => setStatusFilter(status)}
+                      className={`capitalize transition-all ${statusFilter === status
+                          ? "bg-gradient-to-r from-cyan-500 to-purple-600 border-transparent text-white"
+                          : "bg-slate-900/50 border-slate-700/50 text-slate-300 hover:border-cyan-500/30 hover:text-cyan-400"
+                        }`}
+                    >
+                      {status}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+
+              {error && (
+                <div className="bg-red-500/10 border-b border-red-500/20 text-red-400 px-6 py-3">
+                  {error}
+                </div>
+              )}
+
+              {loading ? (
+                <div className="flex items-center justify-center py-12">
+                  <div className="text-slate-400">Loading hackathons...</div>
+                </div>
+              ) : hackathons.length === 0 ? (
+                <div className="flex items-center justify-center py-12">
+                  <div className="text-center">
+                    <Trophy className="h-12 w-12 text-slate-500 mx-auto mb-2 opacity-50" />
+                    <div className="text-slate-400">No hackathons found</div>
+                  </div>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="border-slate-700/50 hover:bg-transparent">
+                        <TableHead className="text-slate-400">Title</TableHead>
+                        <TableHead className="text-slate-400">Organizer</TableHead>
+                        <TableHead className="text-slate-400">Prize</TableHead>
+                        <TableHead className="text-slate-400">Registrations</TableHead>
+                        <TableHead className="text-slate-400">Submissions</TableHead>
+                        <TableHead className="text-slate-400">Status</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {hackathons.map((hackathon) => {
+                        const statusColor = STATUS_COLORS[hackathon.status]
+                        return (
+                          <TableRow key={hackathon.id} className="border-slate-700/50 hover:bg-slate-800/30 transition-colors">
+                            <TableCell className="font-medium text-white">
+                              <div>
+                                <p className="font-semibold">{hackathon.title}</p>
+                                <p className="text-xs text-slate-400 mt-1">{hackathon.category}</p>
+                              </div>
+                            </TableCell>
+                            <TableCell className="text-slate-300">{hackathon.organizer}</TableCell>
+                            <TableCell className="text-slate-300">${hackathon.prizeAmount.toLocaleString('en-US')}</TableCell>
+                            <TableCell className="text-slate-300">{hackathon.registrations ?? 0}</TableCell>
+                            <TableCell className="text-slate-300">{hackathon.submissions ?? 0}</TableCell>
+                            <TableCell>
+                              <Badge className={statusColor}>{hackathon.status}</Badge>
+                            </TableCell>
+                          </TableRow>
+                        )
+                      })}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+        </main>
       </div>
-
-      {/* Summary Stats */}
-      {stats && (
-        <div className="grid gap-4 md:grid-cols-3">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-sm font-medium">Avg Registrations</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.averageRegistrationsPerHackathon}</div>
-              <p className="text-xs text-muted-foreground mt-1">Per hackathon</p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-sm font-medium">Completion Rate</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {stats.totalRegistrations > 0
-                  ? Math.round((stats.totalSubmissions / stats.totalRegistrations) * 100)
-                  : 0}
-                %
-              </div>
-              <p className="text-xs text-muted-foreground mt-1">Submission rate</p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-sm font-medium">Approval Status</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.totalSubmissions}</div>
-              <p className="text-xs text-muted-foreground mt-1">Total submissions</p>
-            </CardContent>
-          </Card>
-        </div>
-      )}
     </div>
   )
 }

@@ -6,9 +6,11 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Card, CardContent } from "@/components/ui/card"
-import { Eye, EyeOff, CheckCircle2, Loader2, Github, Mail, Check } from "lucide-react"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import { Eye, EyeOff, CheckCircle2, Loader2, Github, Check, ArrowLeft, Chrome } from "lucide-react"
 import { Logo } from "@/components/logo"
+import { Checkbox } from "@/components/ui/checkbox"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 const PasswordStrengthIndicator = memo(function PasswordStrengthIndicator({ password }: { password: string }) {
   const checks = {
@@ -19,24 +21,23 @@ const PasswordStrengthIndicator = memo(function PasswordStrengthIndicator({ pass
   }
 
   const strength = Object.values(checks).filter(Boolean).length
-  const strengthColor = strength <= 1 ? "text-red-500" : strength <= 2 ? "text-yellow-500" : strength <= 3 ? "text-blue-500" : "text-green-500"
 
   return (
     <div className="mt-3 space-y-2">
       <div className="grid grid-cols-2 gap-2 text-xs">
-        <div className={`flex items-center gap-1.5 ${checks.hasMinLength ? "text-green-500" : "text-gray-500"}`}>
+        <div className={`flex items-center gap-1.5 ${checks.hasMinLength ? "text-green-500" : "text-muted-foreground"}`}>
           {checks.hasMinLength && <Check size={14} />}
           <span>At least 8 characters</span>
         </div>
-        <div className={`flex items-center gap-1.5 ${checks.hasLowercase ? "text-green-500" : "text-gray-500"}`}>
+        <div className={`flex items-center gap-1.5 ${checks.hasLowercase ? "text-green-500" : "text-muted-foreground"}`}>
           {checks.hasLowercase && <Check size={14} />}
           <span>One lowercase letter</span>
         </div>
-        <div className={`flex items-center gap-1.5 ${checks.hasUppercase ? "text-green-500" : "text-gray-500"}`}>
+        <div className={`flex items-center gap-1.5 ${checks.hasUppercase ? "text-green-500" : "text-muted-foreground"}`}>
           {checks.hasUppercase && <Check size={14} />}
           <span>One uppercase letter</span>
         </div>
-        <div className={`flex items-center gap-1.5 ${checks.hasNumber ? "text-green-500" : "text-gray-500"}`}>
+        <div className={`flex items-center gap-1.5 ${checks.hasNumber ? "text-green-500" : "text-muted-foreground"}`}>
           {checks.hasNumber && <Check size={14} />}
           <span>One number</span>
         </div>
@@ -45,7 +46,7 @@ const PasswordStrengthIndicator = memo(function PasswordStrengthIndicator({ pass
   )
 })
 
-const RegisterForm = memo(function RegisterForm() {
+export default function RegisterPage() {
   const router = useRouter()
 
   const [formData, setFormData] = useState({
@@ -141,262 +142,248 @@ const RegisterForm = memo(function RegisterForm() {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
         <div className="flex flex-col items-center text-center">
-          <CheckCircle2 className="mb-4 h-16 w-16 text-emerald-500" />
+          <CheckCircle2 className="mb-4 h-16 w-16 text-primary" />
           <h2 className="mb-2 text-2xl font-bold text-foreground">Account Created Successfully!</h2>
           <p className="mb-4 text-muted-foreground">Redirecting to email verification...</p>
-          <Loader2 className="h-6 w-6 animate-spin text-emerald-500" />
+          <Loader2 className="h-6 w-6 animate-spin text-primary" />
         </div>
       </div>
     )
   }
 
   return (
-    <div className="flex min-h-screen bg-slate-950">
+    <div className="flex min-h-screen bg-background">
       {/* Left Sidebar */}
-      <div className="hidden w-1/2 flex-col justify-between bg-gradient-to-br from-slate-950 to-slate-900 p-12 lg:flex">
-        <div>
-          <Link href="/" className="inline-flex items-center gap-2 rounded-lg bg-slate-800 px-3 py-2 hover:bg-slate-700">
+      <div className="hidden w-1/2 bg-card lg:block">
+        <div className="flex h-full flex-col justify-between p-12">
+          <Link href="/" className="flex items-center gap-2">
             <Logo />
-            <span className="text-lg font-bold text-cyan-400">HackHub</span>
           </Link>
-        </div>
 
-        <div>
-          <h1 className="mb-8 text-4xl font-bold leading-tight text-white">
-            Start your hackathon journey today
-          </h1>
+          <div>
+            <h1 className="mb-8 text-4xl font-bold leading-tight text-foreground">
+              Start your hackathon journey today
+            </h1>
 
-          <div className="space-y-4">
-            <div className="flex items-start gap-3">
-              <Check className="mt-1 h-5 w-5 flex-shrink-0 text-cyan-400" />
-              <span className="text-gray-300">Access to 500+ hackathons worldwide</span>
-            </div>
-            <div className="flex items-start gap-3">
-              <Check className="mt-1 h-5 w-5 flex-shrink-0 text-cyan-400" />
-              <span className="text-gray-300">Connect with developers globally</span>
-            </div>
-            <div className="flex items-start gap-3">
-              <Check className="mt-1 h-5 w-5 flex-shrink-0 text-cyan-400" />
-              <span className="text-gray-300">Win prizes worth millions</span>
-            </div>
-            <div className="flex items-start gap-3">
-              <Check className="mt-1 h-5 w-5 flex-shrink-0 text-cyan-400" />
-              <span className="text-gray-300">Learn from industry experts</span>
+            <div className="space-y-4">
+              <div className="flex items-start gap-3">
+                <Check className="mt-1 h-5 w-5 flex-shrink-0 text-primary" />
+                <span className="text-muted-foreground">Access to 500+ hackathons worldwide</span>
+              </div>
+              <div className="flex items-start gap-3">
+                <Check className="mt-1 h-5 w-5 flex-shrink-0 text-primary" />
+                <span className="text-muted-foreground">Connect with developers globally</span>
+              </div>
+              <div className="flex items-start gap-3">
+                <Check className="mt-1 h-5 w-5 flex-shrink-0 text-primary" />
+                <span className="text-muted-foreground">Win prizes worth millions</span>
+              </div>
+              <div className="flex items-start gap-3">
+                <Check className="mt-1 h-5 w-5 flex-shrink-0 text-primary" />
+                <span className="text-muted-foreground">Learn from industry experts</span>
+              </div>
             </div>
           </div>
-        </div>
 
-        <div className="text-sm text-gray-500">2026 HackHub. All rights reserved.</div>
+          <div className="text-sm text-muted-foreground">2026 HackHub. All rights reserved.</div>
+        </div>
       </div>
 
       {/* Right Form Section */}
-      <div className="flex w-full items-center justify-center lg:w-1/2">
-        <Card className="w-full border-0 bg-slate-900 px-8 py-12 shadow-2xl sm:max-w-lg">
-          <div className="mb-8">
-            <h2 className="text-2xl font-bold text-white">Create an account</h2>
-            <p className="mt-2 text-sm text-gray-400">Join thousands of developers building the future</p>
-          </div>
+      <div className="flex w-full items-center justify-center px-4 lg:w-1/2 py-8">
+        <div className="w-full max-w-lg">
+          <Link
+            href="/"
+            className="mb-8 inline-flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground lg:hidden"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back to home
+          </Link>
 
-          {/* OAuth Buttons */}
-          <div className="mb-6 grid grid-cols-2 gap-3">
-            <Button
-              variant="outline"
-              className="border-slate-700 bg-slate-800 hover:bg-slate-700"
-              disabled={isLoading}
-            >
-              <Github className="mr-2 h-4 w-4" />
-              GitHub
-            </Button>
-            <Button
-              variant="outline"
-              className="border-slate-700 bg-slate-800 hover:bg-slate-700"
-              disabled={isLoading}
-            >
-              <Mail className="mr-2 h-4 w-4" />
-              Google
-            </Button>
-          </div>
-
-          {/* Divider */}
-          <div className="relative mb-6">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-slate-700"></div>
-            </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="bg-slate-900 px-2 text-gray-500">OR CONTINUE WITH</span>
-            </div>
-          </div>
-
-          {/* Form */}
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {error && (
-              <div className="rounded-lg bg-red-500/10 p-3 text-sm text-red-400">
-                {error}
-              </div>
-            )}
-
-            {/* First and Last Name */}
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <Label htmlFor="firstName" className="block text-sm font-medium text-white">
-                  First name
-                </Label>
-                <Input
-                  id="firstName"
-                  type="text"
-                  placeholder="John"
-                  value={formData.firstName}
-                  onChange={(e) => handleFieldChange("firstName", e.target.value)}
-                  className="mt-1.5 border-slate-700 bg-slate-800 text-white placeholder:text-gray-500"
+          <Card className="border-border bg-card">
+            <CardHeader className="text-center">
+              <CardTitle className="text-2xl">Create an account</CardTitle>
+              <CardDescription>Join thousands of developers building the future</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {/* OAuth Buttons */}
+              <div className="grid gap-4 sm:grid-cols-2 mb-6">
+                <Button
+                  variant="outline"
+                  className="gap-2 bg-transparent"
                   disabled={isLoading}
-                />
-              </div>
-              <div>
-                <Label htmlFor="lastName" className="block text-sm font-medium text-white">
-                  Last name
-                </Label>
-                <Input
-                  id="lastName"
-                  type="text"
-                  placeholder="Doe"
-                  value={formData.lastName}
-                  onChange={(e) => handleFieldChange("lastName", e.target.value)}
-                  className="mt-1.5 border-slate-700 bg-slate-800 text-white placeholder:text-gray-500"
-                  disabled={isLoading}
-                />
-              </div>
-            </div>
-
-            {/* Email */}
-            <div>
-              <Label htmlFor="email" className="block text-sm font-medium text-white">
-                Email
-              </Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="name@example.com"
-                value={formData.email}
-                onChange={(e) => handleFieldChange("email", e.target.value)}
-                className="mt-1.5 border-slate-700 bg-slate-800 text-white placeholder:text-gray-500"
-                disabled={isLoading}
-              />
-            </div>
-
-            {/* Phone */}
-            <div>
-              <Label htmlFor="phone" className="block text-sm font-medium text-white">
-                Phone Number <span className="text-gray-500">(optional)</span>
-              </Label>
-              <Input
-                id="phone"
-                type="tel"
-                placeholder="+91 63511 87842"
-                value={formData.phone}
-                onChange={(e) => handleFieldChange("phone", e.target.value)}
-                className="mt-1.5 border-slate-700 bg-slate-800 text-white placeholder:text-gray-500"
-                disabled={isLoading}
-              />
-              <p className="mt-1 text-xs text-gray-500">For hackathon communications and verification</p>
-            </div>
-
-            {/* Role Selection */}
-            <div>
-              <Label htmlFor="role" className="block text-sm font-medium text-white">
-                I am a
-              </Label>
-              <select
-                id="role"
-                value={formData.role}
-                onChange={(e) => handleFieldChange("role", e.target.value)}
-                className="mt-1.5 w-full rounded-md border border-slate-700 bg-slate-800 px-3 py-2 text-white placeholder:text-gray-500"
-                disabled={isLoading}
-              >
-                <option value="participant">Participant / Developer (default)</option>
-                <option value="organizer">Organizer</option>
-                <option value="mentor">Mentor</option>
-                <option value="judge">Judge</option>
-              </select>
-              <p className="mt-1 text-xs text-gray-500">Account role is fixed to participant for registration.</p>
-            </div>
-
-            {/* Password */}
-            <div>
-              <Label htmlFor="password" className="block text-sm font-medium text-white">
-                Password
-              </Label>
-              <div className="relative mt-1.5">
-                <Input
-                  id="password"
-                  type={showPassword ? "text" : "password"}
-                  placeholder="Create a password"
-                  value={formData.password}
-                  onChange={(e) => handleFieldChange("password", e.target.value)}
-                  className="border-slate-700 bg-slate-800 text-white placeholder:text-gray-500 pr-10"
-                  disabled={isLoading}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-400"
+                  onClick={() => { }}
                 >
-                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                </button>
+                  <Github className="h-4 w-4" />
+                  GitHub
+                </Button>
+                <Button
+                  variant="outline"
+                  className="gap-2 bg-transparent"
+                  disabled={isLoading}
+                  onClick={() => { }}
+                >
+                  <Chrome className="h-4 w-4" />
+                  Google
+                </Button>
               </div>
 
-              {/* Password Strength */}
-              {formData.password && <PasswordStrengthIndicator password={formData.password} />}
-            </div>
+              <div className="relative mb-6">
+                <div className="absolute inset-0 flex items-center">
+                  <span className="w-full border-t border-border" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-card px-2 text-muted-foreground">Or continue with</span>
+                </div>
+              </div>
 
-            {/* Terms */}
-            <div className="flex items-start gap-2 text-xs">
-              <input
-                type="checkbox"
-                id="terms"
-                defaultChecked
-                className="mt-1 rounded border-slate-700 bg-slate-800"
-              />
-              <label htmlFor="terms" className="text-gray-400">
-                I agree to the{" "}
-                <Link href="/terms" className="text-cyan-400 hover:underline">
-                  Terms of Service
-                </Link>{" "}
-                and{" "}
-                <Link href="/privacy" className="text-cyan-400 hover:underline">
-                  Privacy Policy
-                </Link>
-              </label>
-            </div>
+              <form onSubmit={handleSubmit} className="space-y-4">
+                {error && (
+                  <div className="rounded-lg bg-destructive/10 p-3 text-sm text-destructive">
+                    {error}
+                  </div>
+                )}
 
-            {/* Submit Button */}
-            <Button
-              type="submit"
-              disabled={isLoading}
-              className="w-full bg-cyan-500 hover:bg-cyan-600 text-black font-semibold py-2.5 mt-6"
-            >
-              {isLoading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Creating account...
-                </>
-              ) : (
-                "Create account"
-              )}
-            </Button>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-2">
+                    <Label htmlFor="firstName">First name</Label>
+                    <Input
+                      id="firstName"
+                      placeholder="John"
+                      value={formData.firstName}
+                      onChange={(e) => handleFieldChange("firstName", e.target.value)}
+                      disabled={isLoading}
+                      className="bg-secondary"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="lastName">Last name</Label>
+                    <Input
+                      id="lastName"
+                      placeholder="Doe"
+                      value={formData.lastName}
+                      onChange={(e) => handleFieldChange("lastName", e.target.value)}
+                      disabled={isLoading}
+                      className="bg-secondary"
+                    />
+                  </div>
+                </div>
 
-            {/* Sign In Link */}
-            <p className="text-center text-sm text-gray-400">
-              Already have an account?{" "}
-              <Link href="/auth/login" className="text-cyan-400 hover:underline font-medium">
-                Sign in
-              </Link>
-            </p>
-          </form>
-        </Card>
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="name@example.com"
+                    value={formData.email}
+                    onChange={(e) => handleFieldChange("email", e.target.value)}
+                    disabled={isLoading}
+                    className="bg-secondary"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="phone">
+                    Phone Number <span className="text-muted-foreground font-normal">(optional)</span>
+                  </Label>
+                  <Input
+                    id="phone"
+                    type="tel"
+                    placeholder="+91 63511 87842"
+                    value={formData.phone}
+                    onChange={(e) => handleFieldChange("phone", e.target.value)}
+                    disabled={isLoading}
+                    className="bg-secondary"
+                  />
+                  <p className="text-[10px] text-muted-foreground">For hackathon communications and verification</p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="role">I am a</Label>
+                  <Select
+                    value={formData.role}
+                    onValueChange={(value) => handleFieldChange("role", value)}
+                    disabled={isLoading}
+                  >
+                    <SelectTrigger className="bg-secondary">
+                      <SelectValue placeholder="Select your role" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="participant">Participant / Developer</SelectItem>
+                      <SelectItem value="organizer">Organizer</SelectItem>
+                      <SelectItem value="mentor">Mentor</SelectItem>
+                      <SelectItem value="admin">Admin</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="password">Password</Label>
+                  <div className="relative">
+                    <Input
+                      id="password"
+                      type={showPassword ? "text" : "password"}
+                      placeholder="Create a password"
+                      value={formData.password}
+                      onChange={(e) => handleFieldChange("password", e.target.value)}
+                      className="pr-10 bg-secondary"
+                      disabled={isLoading}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                    >
+                      {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                    </button>
+                  </div>
+                  {formData.password && <PasswordStrengthIndicator password={formData.password} />}
+                </div>
+
+                <div className="flex items-start gap-2 text-sm">
+                  <Checkbox
+                    id="terms"
+                    defaultChecked
+                    className="mt-0.5"
+                  />
+                  <label htmlFor="terms" className="text-muted-foreground leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                    I agree to the{" "}
+                    <Link href="/terms" className="text-primary hover:underline">
+                      Terms of Service
+                    </Link>{" "}
+                    and{" "}
+                    <Link href="/privacy" className="text-primary hover:underline">
+                      Privacy Policy
+                    </Link>
+                  </label>
+                </div>
+
+                <Button
+                  type="submit"
+                  disabled={isLoading}
+                  className="w-full"
+                >
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Creating account...
+                    </>
+                  ) : (
+                    "Create account"
+                  )}
+                </Button>
+
+                <p className="text-center text-sm text-muted-foreground">
+                  Already have an account?{" "}
+                  <Link href="/auth/login" className="font-medium text-primary hover:underline">
+                    Sign in
+                  </Link>
+                </p>
+              </form>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </div>
   )
-})
-
-export default RegisterForm
-
+}

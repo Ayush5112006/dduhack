@@ -185,7 +185,7 @@ export function SubmissionForm({
 
     try {
       const formDataWithFiles = new FormData()
-      
+
       // Add form fields
       formDataWithFiles.append("hackathonId", hackathonId)
       if (teamMode && teamId) {
@@ -279,9 +279,10 @@ export function SubmissionForm({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button className="w-full" disabled={isLocked || teamTooSmall}>
+        <Button size="sm" className={isLocked ? "opacity-50" : ""} disabled={isLocked || teamTooSmall}>
           <Upload className="mr-2 h-4 w-4" />
-          {isLocked ? "Submission Deadline Passed" : teamTooSmall ? `Team Needs ${minTeamSize - teamMembers} More Members` : "Submit Project"}
+          <span className="hidden sm:inline">{isLocked ? "Closed" : "Submit"}</span>
+          <span className="sm:hidden">Submit</span>
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
@@ -301,267 +302,265 @@ export function SubmissionForm({
         )}
 
         {teamMode && teamTooSmall && (
-          <Card className="border-orange-200 bg-orange-50">
-            <CardContent className="pt-6">
-              <div className="flex items-start gap-3">
-                <AlertCircle className="h-5 w-5 text-orange-600 mt-0.5" />
-                <div>
-                  <h3 className="font-semibold text-orange-900">Team Too Small</h3>
-                  <p className="text-sm text-orange-800 mt-1">
-                    Your team needs at least {minTeamSize} members to submit. Currently: {teamMembers}/{maxTeamSize}
-                  </p>
-                </div>
+          <div className="rounded-lg border border-yellow-500/20 bg-yellow-500/10 p-4">
+            <div className="flex items-start gap-3">
+              <AlertCircle className="h-5 w-5 text-yellow-500 mt-0.5" />
+              <div>
+                <h3 className="font-semibold text-yellow-500">Team Too Small</h3>
+                <p className="text-sm text-yellow-500/80 mt-1">
+                  Your team needs at least {minTeamSize} members to submit. Currently: {teamMembers}/{maxTeamSize}
+                </p>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         )}
 
         {!isLocked && !teamTooSmall ? (
           <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Project Title */}
-          <div>
-            <Label htmlFor="title">Project Title *</Label>
-            <Input
-              id="title"
-              value={formData.title}
-              onChange={(e) => setFormData((prev) => ({ ...prev, title: e.target.value }))}
-              placeholder="Your awesome project name"
-              required
-            />
-          </div>
-
-          {/* Description */}
-          <div>
-            <Label htmlFor="description">Project Description *</Label>
-            <Textarea
-              id="description"
-              value={formData.description}
-              onChange={(e) => setFormData((prev) => ({ ...prev, description: e.target.value }))}
-              placeholder="Describe your project, its features, and how it works"
-              rows={5}
-              required
-            />
-            <p className="text-xs text-muted-foreground mt-1">
-              {formData.description.length}/500 characters
-            </p>
-          </div>
-
-          {/* Technologies */}
-          <div>
-            <Label>Technologies Used *</Label>
-            <div className="flex flex-wrap gap-2 mb-3">
-              {formData.technologiesUsed.map((tech) => (
-                <Badge key={tech} variant="secondary" className="cursor-pointer">
-                  {tech}
-                  <button
-                    type="button"
-                    onClick={() => handleRemoveTechnology(tech)}
-                    className="ml-1 hover:text-destructive"
-                  >
-                    ×
-                  </button>
-                </Badge>
-              ))}
-            </div>
-            <div className="flex gap-2">
-              <Input
-                value={currentTech}
-                onChange={(e) => setCurrentTech(e.target.value)}
-                placeholder="e.g., React, Node.js, MongoDB"
-                onKeyPress={(e) => {
-                  if (e.key === "Enter") {
-                    e.preventDefault()
-                    handleAddTechnology(currentTech)
-                  }
-                }}
-              />
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => handleAddTechnology(currentTech)}
-              >
-                Add
-              </Button>
-            </div>
-          </div>
-
-          {/* Links Section */}
-          <div className="space-y-4 p-4 bg-muted/50 rounded-lg">
-            <h3 className="font-semibold flex items-center gap-2">
-              <LinkIcon className="h-4 w-4" />
-              Project Links
-            </h3>
-
+            {/* Project Title */}
             <div>
-              <Label htmlFor="gitHub" className="flex items-center gap-2">
-                <Github className="h-4 w-4" />
-                GitHub Repository Link *
-              </Label>
+              <Label htmlFor="title">Project Title *</Label>
               <Input
-                id="gitHub"
-                type="url"
-                value={formData.gitHubLink}
-                onChange={(e) => setFormData((prev) => ({ ...prev, gitHubLink: e.target.value }))}
-                placeholder="https://github.com/username/project"
+                id="title"
+                value={formData.title}
+                onChange={(e) => setFormData((prev) => ({ ...prev, title: e.target.value }))}
+                placeholder="Your awesome project name"
+                required
               />
             </div>
 
+            {/* Description */}
             <div>
-              <Label htmlFor="liveLink">Live Link / Demo</Label>
-              <Input
-                id="liveLink"
-                type="url"
-                value={formData.liveLink}
-                onChange={(e) => setFormData((prev) => ({ ...prev, liveLink: e.target.value }))}
-                placeholder="https://yourproject.com"
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="deployment">Deployment Link</Label>
-              <Input
-                id="deployment"
-                type="url"
-                value={formData.deploymentLink}
-                onChange={(e) => setFormData((prev) => ({ ...prev, deploymentLink: e.target.value }))}
-                placeholder="https://vercel.com/... or similar"
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="video">Video Demo Link</Label>
-              <Input
-                id="video"
-                type="url"
-                value={formData.video}
-                onChange={(e) => setFormData((prev) => ({ ...prev, video: e.target.value }))}
-                placeholder="https://youtube.com/watch?v=..."
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="documentation">Documentation Link</Label>
-              <Input
-                id="documentation"
-                type="url"
-                value={formData.documentation}
-                onChange={(e) => setFormData((prev) => ({ ...prev, documentation: e.target.value }))}
-                placeholder="https://docs.yourproject.com"
-              />
-            </div>
-          </div>
-
-          {/* Team Contributions */}
-          {teamMode && (
-            <div>
-              <Label htmlFor="teamContributions">Team Member Contributions</Label>
+              <Label htmlFor="description">Project Description *</Label>
               <Textarea
-                id="teamContributions"
-                value={formData.teamContributions}
-                onChange={(e) => setFormData((prev) => ({ ...prev, teamContributions: e.target.value }))}
-                placeholder="Describe each team member's contribution..."
+                id="description"
+                value={formData.description}
+                onChange={(e) => setFormData((prev) => ({ ...prev, description: e.target.value }))}
+                placeholder="Describe your project, its features, and how it works"
+                rows={5}
+                required
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                {formData.description.length}/500 characters
+              </p>
+            </div>
+
+            {/* Technologies */}
+            <div>
+              <Label>Technologies Used *</Label>
+              <div className="flex flex-wrap gap-2 mb-3">
+                {formData.technologiesUsed.map((tech) => (
+                  <Badge key={tech} variant="secondary" className="cursor-pointer">
+                    {tech}
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveTechnology(tech)}
+                      className="ml-1 hover:text-destructive"
+                    >
+                      ×
+                    </button>
+                  </Badge>
+                ))}
+              </div>
+              <div className="flex gap-2">
+                <Input
+                  value={currentTech}
+                  onChange={(e) => setCurrentTech(e.target.value)}
+                  placeholder="e.g., React, Node.js, MongoDB"
+                  onKeyPress={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault()
+                      handleAddTechnology(currentTech)
+                    }
+                  }}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => handleAddTechnology(currentTech)}
+                >
+                  Add
+                </Button>
+              </div>
+            </div>
+
+            {/* Links Section */}
+            <div className="space-y-4 p-4 bg-muted/50 rounded-lg">
+              <h3 className="font-semibold flex items-center gap-2">
+                <LinkIcon className="h-4 w-4" />
+                Project Links
+              </h3>
+
+              <div>
+                <Label htmlFor="gitHub" className="flex items-center gap-2">
+                  <Github className="h-4 w-4" />
+                  GitHub Repository Link *
+                </Label>
+                <Input
+                  id="gitHub"
+                  type="url"
+                  value={formData.gitHubLink}
+                  onChange={(e) => setFormData((prev) => ({ ...prev, gitHubLink: e.target.value }))}
+                  placeholder="https://github.com/username/project"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="liveLink">Live Link / Demo</Label>
+                <Input
+                  id="liveLink"
+                  type="url"
+                  value={formData.liveLink}
+                  onChange={(e) => setFormData((prev) => ({ ...prev, liveLink: e.target.value }))}
+                  placeholder="https://yourproject.com"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="deployment">Deployment Link</Label>
+                <Input
+                  id="deployment"
+                  type="url"
+                  value={formData.deploymentLink}
+                  onChange={(e) => setFormData((prev) => ({ ...prev, deploymentLink: e.target.value }))}
+                  placeholder="https://vercel.com/... or similar"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="video">Video Demo Link</Label>
+                <Input
+                  id="video"
+                  type="url"
+                  value={formData.video}
+                  onChange={(e) => setFormData((prev) => ({ ...prev, video: e.target.value }))}
+                  placeholder="https://youtube.com/watch?v=..."
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="documentation">Documentation Link</Label>
+                <Input
+                  id="documentation"
+                  type="url"
+                  value={formData.documentation}
+                  onChange={(e) => setFormData((prev) => ({ ...prev, documentation: e.target.value }))}
+                  placeholder="https://docs.yourproject.com"
+                />
+              </div>
+            </div>
+
+            {/* Team Contributions */}
+            {teamMode && (
+              <div>
+                <Label htmlFor="teamContributions">Team Member Contributions</Label>
+                <Textarea
+                  id="teamContributions"
+                  value={formData.teamContributions}
+                  onChange={(e) => setFormData((prev) => ({ ...prev, teamContributions: e.target.value }))}
+                  placeholder="Describe each team member's contribution..."
+                  rows={3}
+                />
+              </div>
+            )}
+
+            {/* File Upload */}
+            <div>
+              <Label>Project Files (Optional)</Label>
+              <div className="border-2 border-dashed border-border rounded-lg p-6 text-center cursor-pointer hover:bg-muted/50 transition-colors"
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <FileUp className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
+                <p className="text-sm font-medium">Click to upload or drag and drop</p>
+                <p className="text-xs text-muted-foreground">ZIP, RAR, PDF, Images (max 100MB total)</p>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  multiple
+                  onChange={handleFileChange}
+                  accept={Object.values(acceptedFileTypes).flat().join(",")}
+                  className="hidden"
+                />
+              </div>
+
+              {formData.files.length > 0 && (
+                <div className="mt-4 space-y-2">
+                  <p className="text-sm font-medium">Uploaded Files:</p>
+                  {formData.files.map((file, index) => (
+                    <div key={index} className="flex items-center justify-between p-2 bg-muted rounded-lg text-sm">
+                      <span className="truncate">{file.name}</span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-muted-foreground">
+                          {(file.size / 1024 / 1024).toFixed(2)}MB
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => removeFile(index)}
+                          className="text-destructive hover:text-destructive/80"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Additional Notes */}
+            <div>
+              <Label htmlFor="notes">Additional Notes</Label>
+              <Textarea
+                id="notes"
+                value={formData.additionalNotes}
+                onChange={(e) => setFormData((prev) => ({ ...prev, additionalNotes: e.target.value }))}
+                placeholder="Any additional information you'd like to share..."
                 rows={3}
               />
             </div>
-          )}
 
-          {/* File Upload */}
-          <div>
-            <Label>Project Files (Optional)</Label>
-            <div className="border-2 border-dashed border-border rounded-lg p-6 text-center cursor-pointer hover:bg-muted/50 transition-colors"
-              onClick={() => fileInputRef.current?.click()}
-            >
-              <FileUp className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
-              <p className="text-sm font-medium">Click to upload or drag and drop</p>
-              <p className="text-xs text-muted-foreground">ZIP, RAR, PDF, Images (max 100MB total)</p>
-              <input
-                ref={fileInputRef}
-                type="file"
-                multiple
-                onChange={handleFileChange}
-                accept={Object.values(acceptedFileTypes).flat().join(",")}
-                className="hidden"
-              />
-            </div>
-
-            {formData.files.length > 0 && (
-              <div className="mt-4 space-y-2">
-                <p className="text-sm font-medium">Uploaded Files:</p>
-                {formData.files.map((file, index) => (
-                  <div key={index} className="flex items-center justify-between p-2 bg-muted rounded-lg text-sm">
-                    <span className="truncate">{file.name}</span>
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs text-muted-foreground">
-                        {(file.size / 1024 / 1024).toFixed(2)}MB
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => removeFile(index)}
-                        className="text-destructive hover:text-destructive/80"
-                      >
-                        ×
-                      </button>
-                    </div>
-                  </div>
-                ))}
+            {/* Upload Progress */}
+            {loading && uploadProgress > 0 && (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between text-sm">
+                  <span>Uploading...</span>
+                  <span>{Math.round(uploadProgress)}%</span>
+                </div>
+                <Progress value={uploadProgress} />
               </div>
             )}
-          </div>
 
-          {/* Additional Notes */}
-          <div>
-            <Label htmlFor="notes">Additional Notes</Label>
-            <Textarea
-              id="notes"
-              value={formData.additionalNotes}
-              onChange={(e) => setFormData((prev) => ({ ...prev, additionalNotes: e.target.value }))}
-              placeholder="Any additional information you'd like to share..."
-              rows={3}
-            />
-          </div>
-
-          {/* Upload Progress */}
-          {loading && uploadProgress > 0 && (
-            <div className="space-y-2">
-              <div className="flex items-center justify-between text-sm">
-                <span>Uploading...</span>
-                <span>{Math.round(uploadProgress)}%</span>
-              </div>
-              <Progress value={uploadProgress} />
+            {/* Submit Button */}
+            <div className="flex gap-3">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setOpen(false)}
+                disabled={loading}
+              >
+                Cancel
+              </Button>
+              <Button type="submit" disabled={loading} className="flex-1">
+                {loading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Submitting...
+                  </>
+                ) : (
+                  <>
+                    <Upload className="mr-2 h-4 w-4" />
+                    Submit Project
+                  </>
+                )}
+              </Button>
             </div>
-          )}
-
-          {/* Submit Button */}
-          <div className="flex gap-3">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setOpen(false)}
-              disabled={loading}
-            >
-              Cancel
-            </Button>
-            <Button type="submit" disabled={loading} className="flex-1">
-              {loading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Submitting...
-                </>
-              ) : (
-                <>
-                  <Upload className="mr-2 h-4 w-4" />
-                  Submit Project
-                </>
-              )}
-            </Button>
-          </div>
-        </form>
+          </form>
         ) : (
-          <div className="py-8 text-center">
-            <AlertCircle className="h-12 w-12 mx-auto mb-4 text-red-500" />
-            <h3 className="text-lg font-semibold mb-2">{teamTooSmall ? "Team Incomplete" : "Submission Closed"}</h3>
-            <p className="text-muted-foreground">
-              {teamTooSmall 
+          <div className="py-8 text-center rounded-lg border border-muted bg-muted/30">
+            <AlertCircle className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+            <h3 className="text-lg font-semibold mb-2 text-foreground">{teamTooSmall ? "Team Incomplete" : "Submission Closed"}</h3>
+            <p className="text-muted-foreground px-4">
+              {teamTooSmall
                 ? `Your team needs at least ${minTeamSize} members to submit. Currently: ${teamMembers}/${maxTeamSize}`
                 : "This hackathon has reached its submission deadline. No new submissions can be made."}
             </p>

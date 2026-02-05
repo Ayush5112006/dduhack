@@ -5,18 +5,18 @@ import { hackathons, Hackathon, users, ensureUser, UserRole } from "@/lib/data"
 export async function GET() {
   try {
     const session = await getSession()
-    
+
     // If organizer, return only their hackathons
     if (session && session.userRole === "organizer") {
       const myHackathons = hackathons.filter(h => h.ownerId === session.userId)
       return NextResponse.json({ hackathons: myHackathons })
     }
-    
+
     // If admin, return all hackathons
     if (session && session.userRole === "admin") {
       return NextResponse.json({ hackathons })
     }
-    
+
     // Otherwise return empty
     return NextResponse.json({ hackathons: [] })
   } catch (error) {
@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
       title: body.title,
       organizer: body.organizer || session.userName || "Organizer",
       banner: body.banner || "/placeholder.svg",
-      prize: body.prize || `$${Number(body.prizeAmount).toLocaleString()}`,
+      prize: body.prize || `$${Number(body.prizeAmount).toLocaleString('en-US')}`,
       prizeAmount: Number(body.prizeAmount) || 0,
       mode: body.mode,
       location: body.location || "Global",

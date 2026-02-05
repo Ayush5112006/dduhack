@@ -2,20 +2,18 @@ import React from "react"
 import type { Metadata } from 'next'
 import { Geist, Geist_Mono } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
-import { ToastProvider } from '@/components/toast-provider'
-import { SessionProvider } from '@/components/session-provider'
 import { ServiceWorkerRegister } from '@/components/service-worker-register'
 import { PerformanceMonitor } from '@/components/performance-monitor'
-import { ErrorBoundary } from '@/components/error-boundary'
+import { RootLayoutClient } from '@/components/root-layout-client'
 import './globals.css'
 
-const _geist = Geist({ 
+const _geist = Geist({
   subsets: ["latin"],
   display: 'swap',
   preload: true,
   variable: '--font-geist'
 });
-const _geistMono = Geist_Mono({ 
+const _geistMono = Geist_Mono({
   subsets: ["latin"],
   display: 'swap',
   preload: true,
@@ -51,14 +49,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`font-sans antialiased overflow-x-hidden`}>
-        <ErrorBoundary>
-          <SessionProvider>
-            <ToastProvider>
-              {children}
-            </ToastProvider>
-          </SessionProvider>
-        </ErrorBoundary>
+      <body className={`${_geist.variable} ${_geistMono.variable} font-sans antialiased overflow-x-hidden`} suppressHydrationWarning>
+        <RootLayoutClient>
+          {children}
+        </RootLayoutClient>
         <ServiceWorkerRegister />
         <PerformanceMonitor />
         <Analytics />

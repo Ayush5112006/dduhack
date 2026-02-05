@@ -515,17 +515,17 @@ export function HackathonList({ hackathons }: Props) {
       </Sheet>
 
       {/* Main Content */}
-      <div className="flex-1 min-w-0">
+      <div className="flex-1 min-w-0 w-full">
         {/* Search and Sort Bar */}
-        <div className="mb-6 space-y-4">
+        <div className="mb-4 sm:mb-6 space-y-3 sm:space-y-4">
           {/* Search Bar + Cheatsheet */}
           <div className="relative">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
-              placeholder="Search hackathons by title, description, organizer, or tags..."
+              placeholder="Search hackathons..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="pl-10 pr-10 h-12 border-2 focus:border-primary"
+              className="pl-10 pr-10 h-10 sm:h-12 border-2 focus:border-primary text-sm sm:text-base"
             />
             {search && (
               <button
@@ -545,9 +545,9 @@ export function HackathonList({ hackathons }: Props) {
                   <HelpCircle className="h-4 w-4" />
                 </button>
               </DialogTrigger>
-              <DialogContent className="sm:max-w-md">
+              <DialogContent className="sm:max-w-md max-h-[80vh] overflow-y-auto">
                 <DialogHeader>
-                  <DialogTitle>Search Cheatsheet</DialogTitle>
+                  <DialogTitle className="text-base sm:text-lg">Search Cheatsheet</DialogTitle>
                 </DialogHeader>
                 <div className="space-y-3 text-sm text-muted-foreground">
                   <p>Use tokens to filter directly in the search bar:</p>
@@ -567,61 +567,63 @@ export function HackathonList({ hackathons }: Props) {
           </div>
 
           {/* Active Filters and Sort */}
-          <div className="flex flex-wrap items-center gap-3">
+          <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-2 sm:gap-3">
             {/* Results Count */}
-            <span className="text-sm font-medium text-foreground">
+            <span className="text-xs sm:text-sm font-medium text-foreground">
               {sorted.length} {sorted.length === 1 ? "result" : "results"}
             </span>
 
             {/* Active Filter Badges */}
             {hasActiveFilters && (
               <>
-                <span className="text-sm text-muted-foreground">•</span>
-                {selectedCategories.map((cat) => (
-                  <Badge key={cat} variant="secondary" className="gap-1.5 px-2.5 py-1">
-                    {cat}
-                    <X
-                      className="h-3 w-3 cursor-pointer hover:text-destructive transition-colors"
-                      onClick={() => toggleCategory(cat)}
-                    />
-                  </Badge>
-                ))}
-                {selectedStatuses.map((status) => (
-                  <Badge key={status} variant="secondary" className="gap-1.5 px-2.5 py-1 capitalize">
-                    {status}
-                    <X
-                      className="h-3 w-3 cursor-pointer hover:text-destructive transition-colors"
-                      onClick={() => toggleStatus(status)}
-                    />
-                  </Badge>
-                ))}
-                {selectedDifficulties.map((diff) => (
-                  <Badge key={diff} variant="secondary" className="gap-1.5 px-2.5 py-1">
-                    {diff}
-                    <X
-                      className="h-3 w-3 cursor-pointer hover:text-destructive transition-colors"
-                      onClick={() => toggleDifficulty(diff)}
-                    />
-                  </Badge>
-                ))}
-                {selectedModes.map((mode) => (
-                  <Badge key={mode} variant="secondary" className="gap-1.5 px-2.5 py-1">
-                    {mode}
-                    <X 
-                      className="h-3 w-3 cursor-pointer hover:text-destructive transition-colors" 
-                      onClick={() => toggleMode(mode)} 
-                    />
-                  </Badge>
-                ))}
-                {selectedPrizeRanges.map((index) => (
-                  <Badge key={index} variant="secondary" className="gap-1.5 px-2.5 py-1">
-                    {prizeRanges[index].label}
-                    <X
-                      className="h-3 w-3 cursor-pointer hover:text-destructive transition-colors"
-                      onClick={() => togglePrizeRange(index)}
-                    />
-                  </Badge>
-                ))}
+                <span className="text-sm text-muted-foreground hidden sm:inline">•</span>
+                <div className="flex flex-wrap gap-1.5 sm:gap-2">
+                  {selectedCategories.map((cat) => (
+                    <Badge key={cat} variant="secondary" className="gap-1 px-2 py-0.5 sm:px-2.5 sm:py-1 text-xs">
+                      {cat}
+                      <X
+                        className="h-3 w-3 cursor-pointer hover:text-destructive transition-colors"
+                        onClick={() => toggleCategory(cat)}
+                      />
+                    </Badge>
+                  ))}
+                  {selectedStatuses.map((status) => (
+                    <Badge key={status} variant="secondary" className="gap-1 px-2 py-0.5 sm:px-2.5 sm:py-1 text-xs capitalize">
+                      {status}
+                      <X
+                        className="h-3 w-3 cursor-pointer hover:text-destructive transition-colors"
+                        onClick={() => toggleStatus(status)}
+                      />
+                    </Badge>
+                  ))}
+                  {selectedDifficulties.map((diff) => (
+                    <Badge key={diff} variant="secondary" className="gap-1 px-2 py-0.5 sm:px-2.5 sm:py-1 text-xs">
+                      {diff}
+                      <X
+                        className="h-3 w-3 cursor-pointer hover:text-destructive transition-colors"
+                        onClick={() => toggleDifficulty(diff)}
+                      />
+                    </Badge>
+                  ))}
+                  {selectedModes.map((mode) => (
+                    <Badge key={mode} variant="secondary" className="gap-1.5 px-2.5 py-1">
+                      {mode}
+                      <X 
+                        className="h-3 w-3 cursor-pointer hover:text-destructive transition-colors" 
+                        onClick={() => toggleMode(mode)} 
+                      />
+                    </Badge>
+                  ))}
+                  {selectedPrizeRanges.map((index) => (
+                    <Badge key={index} variant="secondary" className="gap-1.5 px-2.5 py-1">
+                      {prizeRanges[index].label}
+                      <X
+                        className="h-3 w-3 cursor-pointer hover:text-destructive transition-colors"
+                        onClick={() => togglePrizeRange(index)}
+                      />
+                    </Badge>
+                  ))}
+                </div>
               </>
             )}
 
@@ -659,7 +661,7 @@ export function HackathonList({ hackathons }: Props) {
             )}
           </div>
         ) : (
-          <div className="grid gap-6 grid-cols-1 md:grid-cols-2 xl:grid-cols-2 2xl:grid-cols-3">
+          <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3">
             {sorted.map((hackathon) => (
               <PublicHackathonCard key={hackathon.id} hackathon={hackathon} />
             ))}

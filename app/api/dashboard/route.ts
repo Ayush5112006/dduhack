@@ -12,6 +12,53 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
+    // ============================================
+    // HANDLE OAUTH DEMO SESSIONS
+    // ============================================
+    // Check if this is an OAuth demo session (no database record)
+    if (session.userId && session.userId.includes('demo')) {
+      console.log('📊 Serving demo dashboard data for OAuth session')
+
+      const demoData = {
+        success: true,
+        user: {
+          id: session.userId,
+          name: session.userName || "Demo User",
+          email: session.userEmail,
+          role: session.userRole,
+          profile: null,
+        },
+        stats: {
+          activeHackathons: 0,
+          totalSubmissions: 0,
+          wins: 0,
+          unreadNotifications: 1,
+        },
+        myHackathons: [],
+        notifications: [
+          {
+            id: "demo_notif_1",
+            title: "Welcome to HackHub! 🎉",
+            message: "You're logged in with OAuth demo mode. Explore hackathons and start building!",
+            link: "/hackathons",
+            read: false,
+            type: "announcement",
+            createdAt: new Date(),
+          }
+        ],
+        certificates: [],
+      }
+
+      return NextResponse.json(demoData, {
+        headers: {
+          "Cache-Control": "private, no-cache",
+        },
+      })
+    }
+
+    // ============================================
+    // REGULAR DATABASE-BACKED SESSIONS
+    // ============================================
     const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown"
     const rate = checkRateLimit(`dashboard:${ip}:${session.userId}`, 30, 60_000)
     if (!rate.allowed) {
@@ -75,7 +122,7 @@ export async function GET(request: NextRequest) {
 
     // Calculate statistics
     const stats = {
-      activeHackathons: registrations.filter(r => 
+      activeHackathons: registrations.filter(r =>
         r.hackathon.status === 'live' || r.hackathon.status === 'upcoming'
       ).length,
       totalSubmissions: submissions.length,
@@ -112,6 +159,7 @@ export async function GET(request: NextRequest) {
       type: n.type,
       createdAt: n.createdAt,
     }))
+
     const payload = {
       success: true,
       user,

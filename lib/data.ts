@@ -88,7 +88,7 @@ export type Submission = {
   feedback?: string
 }
 
-export type UserRole = "participant" | "organizer" | "admin"
+export type UserRole = "participant" | "organizer" | "admin" | "judge"
 
 export type User = {
   id: string

@@ -76,13 +76,7 @@ export default function ForgotOtpPage() {
             </Button>
           </form>
 
-          {mockOtp && (
-            <div className="mt-4 rounded-md border border-dashed p-3 text-sm">
-              <p className="font-semibold">Mock OTP (dev only)</p>
-              <p className="text-muted-foreground">{mockOtp}</p>
-              <p className="text-xs text-muted-foreground mt-2">Use this OTP on the verification page</p>
-            </div>
-          )}
+
 
           <p className="mt-4 text-center text-sm text-muted-foreground">
             Already have an OTP?{' '}

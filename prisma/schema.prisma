@@ -1,6 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -10,396 +7,334 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-
-// User model - handles auth and roles
 model User {
-  id              String    @id @default(cuid())
-  email           String    @unique
-  name            String
-  password        String
-  phone           String?   // Phone number for students
-  role            String    @default("participant") // participant, organizer, admin, judge
-  status          String    @default("active") // active, suspended, pending
-  avatar          String?
-  bio             String?
-  emailVerified   Boolean   @default(false) // Email verification status
-  otp             String?   // Deprecated: use EmailOTP model instead
-  otpExpiresAt    DateTime? // Deprecated: use EmailOTP model instead
-  
-  // Relations
-  profile         UserProfile?
-  hackathonsOwned Hackathon[] @relation("OwnedHackathons")
-  registrations   Registration[]
-  teamLeads       Team[] @relation("TeamLeader")
-  teamMembers     TeamMember[]
-  submissions     Submission[]
-  judgeAssignments JudgeAssignment[]
-  scores          Score[]
-  certificates    Certificate[]
-  notifications   Notification[]
-  sessions        Session[]
-  
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  id                      String             @id @default(cuid())
+  email                   String             @unique
+  name                    String
+  password                String
+  phone                   String?
+  role                    String             @default("participant")
+  status                  String             @default("active")
+  avatar                  String?
+  bio                     String?
+  otp                     String?
+  otpExpiresAt            DateTime?
+  createdAt               DateTime           @default(now())
+  updatedAt               DateTime           @updatedAt
+  emailVerified           Boolean            @default(false)
+  certificates            Certificate[]
+  hackathonsOwned         Hackathon[]        @relation("OwnedHackathons")
+  judgeAssignments        JudgeAssignment[]
+  mentorAssignments       MentorAssignment[] @relation("MentorAssignments")
+  studentMentorAssignments MentorAssignment[] @relation("StudentMentorAssignments")
+  notifications           Notification[]
+  registrations           Registration[]
+  scores                  Score[]
+  sessions                Session[]
+  submissions             Submission[]
+  teamLeads               Team[]             @relation("TeamLeader")
+  teamMembers             TeamMember[]
+  profile                 UserProfile?
 }
 
-// Session model - tracks active sessions for logout from all devices
 model Session {
-  id              String    @id @default(cuid())
-  userId          String
-  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  token           String    @unique
-  userAgent       String?
-  ipAddress       String?
-  
-  createdAt       DateTime  @default(now())
-  expiresAt       DateTime
-  
+  id                 String   @id @default(cuid())
+  userId             String
+  token              String   @unique
+  csrfToken          String?  // CSRF token for form submissions
+  fingerprint        String?  // Device fingerprint for hijacking detection
+  userAgent          String?
+  ipAddress          String?
+  createdAt          DateTime @default(now())
+  expiresAt          DateTime // Relative expiration (1 hour)
+  absoluteExpiresAt  DateTime? // Absolute expiration (24 hours max)
+  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   @@index([userId])
+  @@index([token])
   @@index([expiresAt])
+  @@index([absoluteExpiresAt])
 }
 
-// User Profile - extended user information
 model UserProfile {
-  id              String    @id @default(cuid())
-  userId          String    @unique
-  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  bio             String?
-  location        String?
-  website         String?
-  github          String?
-  linkedin        String?
-  twitter         String?
-  skills          String?   // JSON array stored as string
-  interests       String?   // JSON array stored as string
-  avatar          String?
-  
-  totalHackathons Int       @default(0)
+  id               String   @id @default(cuid())
+  userId           String   @unique
+  bio              String?
+  location         String?
+  website          String?
+  github           String?
+  linkedin         String?
+  twitter          String?
+  skills           String?
+  interests        String?
+  avatar           String?
+  totalHackathons  Int      @default(0)
   totalSubmissions Int      @default(0)
-  wins            Int       @default(0)
-  
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  wins             Int      @default(0)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
-// Hackathon model - main hackathon events
 model Hackathon {
-  id                    String    @id @default(cuid())
-  title                 String
-  organizer             String
-  ownerId               String
-  owner                 User      @relation("OwnedHackathons", fields: [ownerId], references: [id])
-  
-  banner                String?
-  description           String?
-  eligibility           String?
-  problemStatementPdf   String?   // Path to PDF file in /public/uploads
-  
-  prize                 String?
-  prizeAmount           Int       @default(0)
-  
-  mode                  String    // Online, Offline, Hybrid
-  location              String?
-  
-  category              String
-  tags                  String?   // JSON array stored as string
-  difficulty            String    // Beginner, Intermediate, Advanced
-  
-  registrationDeadline  DateTime
-  startDate             DateTime
-  endDate               DateTime
-  
-  status                String    @default("upcoming") // upcoming, live, closed, past
-  
-  isFree                Boolean   @default(true)
-  featured              Boolean   @default(false)
-  
-  participants          Int       @default(0)
-  
-  // Team settings
-  allowTeams            Boolean   @default(true)
-  minTeamSize           Int       @default(2)
-  maxTeamSize           Int       @default(5)
-  allowSoloSubmission   Boolean   @default(false)
-  
-  // Relations
-  registrations         Registration[]
-  teams                 Team[]
-  submissions           Submission[]
-  problemStatements     ProblemStatement[]
-  judgeAssignments      JudgeAssignment[]
-  scores                Score[]
-  winners               Winner[]
-  certificates          Certificate[]
-  
-  createdAt             DateTime  @default(now())
-  updatedAt             DateTime  @updatedAt
+  id                   String             @id @default(cuid())
+  title                String
+  organizer            String
+  ownerId              String
+  organizationType     String?            // Company / College / Community
+  organizationLogo     String?            // Logo URL
+  banner               String?
+  description          String?
+  eligibility          String?
+  problemStatementPdf  String?
+  prize                String?
+  prizeAmount          Int                @default(0)
+  mode                 String
+  location             String?
+  category             String
+  tags                 String?
+  difficulty           String
+  registrationDeadline DateTime
+  startDate            DateTime
+  endDate              DateTime
+  status               String             @default("upcoming")
+  isFree               Boolean            @default(true)
+  featured             Boolean            @default(false)
+  participants         Int                @default(0)
+  allowTeams           Boolean            @default(true)
+  minTeamSize          Int                @default(2)
+  maxTeamSize          Int                @default(5)
+  allowSoloSubmission  Boolean            @default(false)
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+  certificates         Certificate[]
+  owner                User               @relation("OwnedHackathons", fields: [ownerId], references: [id])
+  judgeAssignments     JudgeAssignment[]
+  mentorAssignments    MentorAssignment[]
+  problemStatements    ProblemStatement[]
+  registrations        Registration[]
+  scores               Score[]
+  submissions          Submission[]
+  teams                Team[]
+  winners              Winner[]
 }
 
-// Registration model - user registration for hackathons
 model Registration {
-  id            String    @id @default(cuid())
-  hackathonId   String
-  hackathon     Hackathon @relation(fields: [hackathonId], references: [id], onDelete: Cascade)
-  
-  userId        String
-  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  userEmail     String
-  
-  mode          String    // individual, team
-  teamId        String?
-  team          Team?     @relation(fields: [teamId], references: [id])
-  
-  status        String    @default("pending") // pending, approved, rejected
-  consent       Boolean   @default(false)
-  
-  // Student-specific information
-  fullName      String?
-  phone         String?
-  university    String?
+  id               String    @id @default(cuid())
+  hackathonId      String
+  userId           String
+  userEmail        String
+  mode             String
+  teamId           String?
+  status           String    @default("pending")
+  consent          Boolean   @default(false)
+  fullName         String?
+  phone            String?
+  university       String?
   enrollmentNumber String?
-  branch        String?
-  year          String?
-  skills        String?
-  experience    String?
-  githubProfile String?
-  linkedinProfile String?
-  portfolioUrl  String?
-  projectIdea   String?
-  motivation    String?
-  
-  formData      String?   // JSON stored as string for additional data
-  
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-  
+  branch           String?
+  year             String?
+  skills           String?
+  experience       String?
+  githubProfile    String?
+  linkedinProfile  String?
+  portfolioUrl     String?
+  projectIdea      String?
+  motivation       String?
+  formData         String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  hackathon        Hackathon @relation(fields: [hackathonId], references: [id], onDelete: Cascade)
+  team             Team?     @relation(fields: [teamId], references: [id])
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   @@unique([hackathonId, userId])
 }
 
-// Team model - for team-based hackathons
 model Team {
-  id              String    @id @default(cuid())
-  hackathonId     String
-  hackathon       Hackathon @relation(fields: [hackathonId], references: [id], onDelete: Cascade)
-  
-  name            String
-  
-  leaderId        String
-  leader          User      @relation("TeamLeader", fields: [leaderId], references: [id])
-  leaderEmail     String
-  
-  members         TeamMember[]
-  locked          Boolean   @default(false)
-  
-  registrations   Registration[]
-  submissions     Submission[]
-  
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  id            String         @id @default(cuid())
+  hackathonId   String
+  name          String
+  code          String         @unique
+  leaderId      String
+  leaderEmail   String
+  locked        Boolean        @default(false)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  registrations Registration[]
+  submissions   Submission[]
+  hackathon     Hackathon      @relation(fields: [hackathonId], references: [id], onDelete: Cascade)
+  leader        User           @relation("TeamLeader", fields: [leaderId], references: [id])
+  members       TeamMember[]
 }
 
-// Team Member model - users on a team
 model TeamMember {
-  id        String    @id @default(cuid())
+  id        String   @id @default(cuid())
   teamId    String
-  team      Team      @relation(fields: [teamId], references: [id], onDelete: Cascade)
-  
   userId    String
-  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
   email     String
-  status    String    // joined, invited, declined
-  role      String    @default("member") // leader, member
-  
-  createdAt DateTime  @default(now())
-  
+  status    String
+  role      String   @default("member")
+  createdAt DateTime @default(now())
+  team      Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   @@unique([teamId, userId])
 }
 
-// Problem Statement model - for hackathon problem statements
 model ProblemStatement {
-  id              String    @id @default(cuid())
-  hackathonId     String
-  hackathon       Hackathon @relation(fields: [hackathonId], references: [id], onDelete: Cascade)
-  
-  title           String
-  description     String?
-  difficulty      String    // Easy, Medium, Hard
-  
-  prize           String?
-  resources       String?   // JSON array of resource links
-  dataset         String?
-  
-  submissions     Submission[]
-  
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  id          String       @id @default(cuid())
+  hackathonId String
+  title       String
+  description String?
+  difficulty  String
+  prize       String?
+  resources   String?
+  dataset     String?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  hackathon   Hackathon    @relation(fields: [hackathonId], references: [id], onDelete: Cascade)
+  submissions Submission[]
 }
 
-// Submission model - team/user submissions
 model Submission {
-  id              String    @id @default(cuid())
-  hackathonId     String
-  hackathon       Hackathon @relation(fields: [hackathonId], references: [id], onDelete: Cascade)
-  
-  teamId          String?
-  team            Team?     @relation(fields: [teamId], references: [id])
-  
-  userId          String?
-  user            User?     @relation(fields: [userId], references: [id])
-  
-  userEmail       String?
-  
-  psId            String?
+  id               String            @id @default(cuid())
+  hackathonId      String
+  teamId           String?
+  userId           String?
+  userEmail        String?
+  psId             String?
+  title            String
+  description      String?
+  github           String?
+  demo             String?
+  video            String?
+  files            String?
+  techStack        String?
+  status           String            @default("draft")
+  locked           Boolean           @default(false)
+  lockedAt         DateTime?
+  lockedReason     String?
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  certificates     Certificate[]
+  scores           Score[]
+  hackathon        Hackathon         @relation(fields: [hackathonId], references: [id], onDelete: Cascade)
   problemStatement ProblemStatement? @relation(fields: [psId], references: [id])
-  
-  title           String
-  description     String?
-  
-  github          String?
-  demo            String?
-  video           String?
-  
-  files           String?   // JSON array of file URLs
-  techStack       String?   // JSON array of technologies
-  
-  status          String    @default("draft") // draft, submitted, late
-  locked          Boolean   @default(false)   // submission is locked from editing
-  lockedAt        DateTime?
-  lockedReason    String?   // reason for lock (deadline, admin, etc)
-  
-  scores          Score[]
-  winners         Winner[]
-  certificates    Certificate[]
-  
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  team             Team?             @relation(fields: [teamId], references: [id])
+  user             User?             @relation(fields: [userId], references: [id])
+  winners          Winner[]
 }
 
-// Judge Assignment model
 model JudgeAssignment {
-  id              String    @id @default(cuid())
-  hackathonId     String
-  hackathon       Hackathon @relation(fields: [hackathonId], references: [id], onDelete: Cascade)
-  
-  judgeId         String
-  judge           User      @relation(fields: [judgeId], references: [id], onDelete: Cascade)
-  judgeEmail      String
-  
-  createdAt       DateTime  @default(now())
-  
+  id          String    @id @default(cuid())
+  hackathonId String
+  judgeId     String
+  judgeEmail  String
+  createdAt   DateTime  @default(now())
+  hackathon   Hackathon @relation(fields: [hackathonId], references: [id], onDelete: Cascade)
+  judge       User      @relation(fields: [judgeId], references: [id], onDelete: Cascade)
+
   @@unique([hackathonId, judgeId])
 }
 
-// Score model - judge scores for submissions
 model Score {
-  id              String    @id @default(cuid())
-  submissionId    String
-  submission      Submission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
-  
-  judgeId         String
-  judge           User      @relation(fields: [judgeId], references: [id], onDelete: Cascade)
-  
-  hackathonId     String
-  hackathon       Hackathon @relation(fields: [hackathonId], references: [id], onDelete: Cascade)
-  
-  innovation      Int       // 1-10
-  technical       Int       // 1-10
-  design          Int       // 1-10
-  impact          Int       // 1-10
-  presentation    Int       // 1-10
-  
-  total           Float     // auto-calculated average
-  feedback        String?
-  
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
-  
+  id           String     @id @default(cuid())
+  submissionId String
+  judgeId      String
+  hackathonId  String
+  innovation   Int
+  technical    Int
+  design       Int
+  impact       Int
+  presentation Int
+  total        Float
+  feedback     String?
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  hackathon    Hackathon  @relation(fields: [hackathonId], references: [id], onDelete: Cascade)
+  judge        User       @relation(fields: [judgeId], references: [id], onDelete: Cascade)
+  submission   Submission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+
   @@unique([submissionId, judgeId])
 }
 
-// Winner model - hackathon winners
 model Winner {
-  id              String    @id @default(cuid())
-  hackathonId     String
-  hackathon       Hackathon @relation(fields: [hackathonId], references: [id], onDelete: Cascade)
-  
-  submissionId    String
-  submission      Submission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
-  
-  rank            Int       // 1, 2, 3 (1st, 2nd, 3rd)
-  prize           String?
-  
-  announcedAt     DateTime  @default(now())
-  
+  id           String     @id @default(cuid())
+  hackathonId  String
+  submissionId String
+  rank         Int
+  prize        String?
+  announcedAt  DateTime   @default(now())
+  hackathon    Hackathon  @relation(fields: [hackathonId], references: [id], onDelete: Cascade)
+  submission   Submission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+
   @@unique([hackathonId, submissionId])
   @@unique([hackathonId, rank])
 }
 
-// Certificate model - issued certificates
 model Certificate {
-  id              String    @id @default(cuid())
-  userId          String
-  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  userName        String
-  userEmail       String
-  
-  hackathonId     String
-  hackathon       Hackathon @relation(fields: [hackathonId], references: [id], onDelete: Cascade)
-  
-  hackathonTitle  String
-  
-  // Uploaded certificate file (PDF) relative URL
-  fileUrl         String?
-  
-  submissionId    String?
-  submission      Submission? @relation(fields: [submissionId], references: [id])
-  
-  type            String    // participation, winner, runner-up, completion
-  rank            Int?      // for winner certificates
-  
-  verificationCode String   @unique
-  verified        Boolean   @default(false)
-  
-  issuedAt        DateTime  @default(now())
-  
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
-  
-  // Prevent multiple certificates per user per hackathon
+  id               String      @id @default(cuid())
+  userId           String
+  userName         String
+  userEmail        String
+  hackathonId      String
+  hackathonTitle   String
+  fileUrl          String?
+  submissionId     String?
+  type             String
+  rank             Int?
+  verificationCode String      @unique
+  verified         Boolean     @default(false)
+  issuedAt         DateTime    @default(now())
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+  hackathon        Hackathon   @relation(fields: [hackathonId], references: [id], onDelete: Cascade)
+  submission       Submission? @relation(fields: [submissionId], references: [id])
+  user             User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   @@unique([hackathonId, userId])
 }
 
-// Notification model - user notifications
 model Notification {
-  id              String    @id @default(cuid())
-  userId          String
-  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  type            String    // registration, deadline, result, invitation, announcement
-  title           String
-  message         String
-  link            String?
-  
-  read            Boolean   @default(false)
-  
-  createdAt       DateTime  @default(now())
-  
+  id        String   @id @default(cuid())
+  userId    String
+  type      String
+  title     String
+  message   String
+  link      String?
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   @@index([userId, createdAt])
 }
 
-// EmailOTP model - tracks OTP for email verification
 model EmailOTP {
-  id              String    @id @default(cuid())
-  email           String    @unique
-  otp             String    // 6-digit OTP
-  expiresAt       DateTime  // OTP expiration time
-  attempts        Int       @default(0) // Track failed attempts
-  createdAt       DateTime  @default(now())
-  
+  id        String   @id @default(cuid())
+  email     String   @unique
+  otp       String
+  expiresAt DateTime
+  attempts  Int      @default(0)
+  createdAt DateTime @default(now())
+
   @@index([email, expiresAt])
+}
+
+model MentorAssignment {
+  id          String    @id @default(cuid())
+  hackathonId String
+  studentId   String
+  mentorId    String
+  assignedAt  DateTime  @default(now())
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  hackathon   Hackathon @relation(fields: [hackathonId], references: [id], onDelete: Cascade)
+  student     User      @relation("StudentMentorAssignments", fields: [studentId], references: [id], onDelete: Cascade)
+  mentor      User      @relation("MentorAssignments", fields: [mentorId], references: [id], onDelete: Cascade)
+
+  @@unique([hackathonId, studentId])
+  @@index([hackathonId])
+  @@index([studentId])
+  @@index([mentorId])
 }

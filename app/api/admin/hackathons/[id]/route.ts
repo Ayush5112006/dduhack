@@ -6,7 +6,8 @@ export const runtime = "nodejs"
 export const dynamic = "force-dynamic"
 export const revalidate = 0
 
-export async function DELETE(req: Request, { params }: { params: { id: string } }) {
+export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
   const session = await getSession()
 
   if (!session) {
@@ -17,7 +18,7 @@ export async function DELETE(req: Request, { params }: { params: { id: string } 
     return NextResponse.json({ error: "Forbidden" }, { status: 403 })
   }
 
-  const hackathonId = params.id
+  const hackathonId = id
 
   try {
     await prisma.hackathon.delete({

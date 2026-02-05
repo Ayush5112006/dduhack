@@ -20,8 +20,9 @@ const finalizeSchema = z.object({
 // GET: Get submission details
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params
   try {
     const session = await getSession()
     if (!session) {
@@ -29,7 +30,7 @@ export async function GET(
     }
 
     const submission = await prisma.submission.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: {
         user: { select: { name: true, email: true } },
         team: {
@@ -66,8 +67,9 @@ export async function GET(
 // PATCH: Update submission (draft mode)
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params
   try {
     const session = await getSession()
     if (!session) {
@@ -82,7 +84,7 @@ export async function PATCH(
     }
 
     const submission = await prisma.submission.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: { team: true },
     })
 
@@ -119,7 +121,7 @@ export async function PATCH(
     if (validation.data.files) data.files = JSON.stringify(validation.data.files)
 
     const updated = await prisma.submission.update({
-      where: { id: params.id },
+      where: { id },
       data,
     })
 
@@ -133,8 +135,9 @@ export async function PATCH(
 // PUT: Finalize submission
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params
   try {
     const session = await getSession()
     if (!session) {
@@ -149,7 +152,7 @@ export async function PUT(
     }
 
     const submission = await prisma.submission.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: { team: true, hackathon: true },
     })
 
@@ -188,7 +191,7 @@ export async function PUT(
     }
 
     const updated = await prisma.submission.update({
-      where: { id: params.id },
+      where: { id },
       data: { status: newStatus },
     })
 

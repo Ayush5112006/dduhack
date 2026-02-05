@@ -20,7 +20,7 @@ type HackathonDetail = HackathonSummary & {
 
 function formatDate(value: string | Date) {
   const date = value instanceof Date ? value : new Date(value)
-  return date.toLocaleString(undefined, { month: "short", day: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit" })
+  return date.toLocaleString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit" })
 }
 
 export default function HackathonDetailPage() {
@@ -207,15 +207,18 @@ export default function HackathonDetailPage() {
                 <p className="mt-1 whitespace-pre-line">{hackathon.eligibility}</p>
               </div>
             )}
-            {hackathon.tags && hackathon.tags.length > 0 && (
-              <div className="flex flex-wrap gap-2 md:col-span-2">
-                {hackathon.tags.map((tag) => (
-                  <Badge key={tag} variant="outline" className="rounded-full px-3 py-1 text-xs">
-                    {tag}
-                  </Badge>
-                ))}
-              </div>
-            )}
+            {(() => {
+              const tags = Array.isArray(hackathon.tags) ? hackathon.tags : (typeof hackathon.tags === 'string' ? (() => { try { return JSON.parse(hackathon.tags); } catch { return []; } })() : []);
+              return tags && tags.length > 0 ? (
+                <div className="flex flex-wrap gap-2 md:col-span-2">
+                  {tags.map((tag: string) => (
+                    <Badge key={tag} variant="outline" className="rounded-full px-3 py-1 text-xs">
+                      {tag}
+                    </Badge>
+                  ))}
+                </div>
+              ) : null;
+            })()}
           </CardContent>
         </Card>
 

@@ -157,15 +157,18 @@ export function HackathonCard({ hackathon, onView, onEdit, onDelete, onParticipa
             <span>{hackathon.counts.teams} teams</span>
           </div>
         </div>
-        {hackathon.tags && hackathon.tags.length > 0 && (
-          <div className="flex flex-wrap gap-2">
-            {hackathon.tags.map((tag) => (
-              <Badge key={tag} variant="outline" className="rounded-full px-3 py-1 text-xs bg-muted/40 border-border/60">
-                {tag}
-              </Badge>
-            ))}
-          </div>
-        )}
+        {(() => {
+          const tags = Array.isArray(hackathon.tags) ? hackathon.tags : (typeof hackathon.tags === 'string' ? (() => { try { return JSON.parse(hackathon.tags); } catch { return []; } })() : []);
+          return tags && tags.length > 0 ? (
+            <div className="flex flex-wrap gap-2">
+              {tags.map((tag) => (
+                <Badge key={tag} variant="outline" className="rounded-full px-3 py-1 text-xs bg-muted/40 border-border/60">
+                  {tag}
+                </Badge>
+              ))}
+            </div>
+          ) : null;
+        })()}
       </CardContent>
     </Card>
   )

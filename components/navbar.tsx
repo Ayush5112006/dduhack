@@ -5,13 +5,7 @@ import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Logo } from "@/components/logo"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { Search, ChevronDown, Menu, X } from "lucide-react"
+import { Search, Menu, X } from "lucide-react"
 
 const categories: Array<{
   name: string
@@ -26,79 +20,18 @@ export function Navbar() {
     setMounted(true)
   }, [])
 
-  // Return early if not mounted to ensure server/client match
-  if (!mounted) {
-    return (
-      <header className="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <nav className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 lg:px-8">
-          <div className="flex items-center gap-8">
-            <Link href="/" className="flex items-center gap-2">
-              <Logo />
-            </Link>
-            <div className="hidden items-center gap-6 lg:flex">
-              <Link href="/hackathons" className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground">
-                Hackathons
-              </Link>
-              <Link href="/organizer/dashboard" className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground">
-                Host a Hackathon
-              </Link>
-            </div>
-          </div>
-          <div className="hidden items-center gap-4 lg:flex">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                type="search"
-                placeholder="Search hackathons..."
-                className="w-64 bg-secondary pl-9"
-              />
-            </div>
-            <Link href="/auth/login">
-              <Button variant="ghost" className="text-muted-foreground">
-                Log in
-              </Button>
-            </Link>
-            <Link href="/auth/register">
-              <Button>Sign up</Button>
-            </Link>
-          </div>
-          <button
-            type="button"
-            className="lg:hidden p-2 touch-manipulation"
-            aria-label="Toggle menu"
-            disabled
-          >
-            <Menu className="h-6 w-6 text-foreground" />
-          </button>
-        </nav>
-      </header>
-    )
-  }
-
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <header className="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur-sm supports-[backdrop-filter]:bg-background/60">
       <nav className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 lg:px-8">
         <div className="flex items-center gap-8">
           <Link href="/" className="flex items-center gap-2">
             <Logo />
           </Link>
-          
+
           <div className="hidden items-center gap-6 lg:flex">
-            <Link href="/hackathons" className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground">
+            <Link href="/hackathons" className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground hover:underline">
               Hackathons
             </Link>
-            <DropdownMenu>
-              <DropdownMenuTrigger className="flex items-center gap-1 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground">
-                Categories <ChevronDown className="h-4 w-4" />
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="start" className="w-56">
-                {categories.map((category) => (
-                  <DropdownMenuItem key={category.name} asChild>
-                    <Link href={category.href}>{category.name}</Link>
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
             <Link href="/organizer/dashboard" className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground">
               Host a Hackathon
             </Link>
@@ -111,17 +44,17 @@ export function Navbar() {
             <Input
               type="search"
               placeholder="Search hackathons..."
-              className="w-64 bg-secondary pl-9"
+              className="w-56 bg-secondary/50 pl-9 border-0 text-sm"
             />
           </div>
-          <Link href="/auth/login">
-            <Button variant="ghost" className="text-muted-foreground">
+          <Button asChild variant="ghost" className="text-sm text-muted-foreground">
+            <Link href="/auth/login">
               Log in
-            </Button>
-          </Link>
-          <Link href="/auth/register">
-            <Button>Sign up</Button>
-          </Link>
+            </Link>
+          </Button>
+          <Button asChild className="text-sm">
+            <Link href="/auth/register">Sign up</Link>
+          </Button>
         </div>
 
         <button
@@ -146,7 +79,7 @@ export function Navbar() {
               <Input
                 type="search"
                 placeholder="Search hackathons..."
-                className="w-full bg-secondary pl-9 h-11 touch-manipulation"
+                className="w-full bg-secondary/50 pl-9 h-10 border-0 text-sm"
               />
             </div>
             <Link href="/hackathons" className="text-base font-medium text-muted-foreground py-2 touch-manipulation" onClick={() => setMobileMenuOpen(false)}>
@@ -156,12 +89,12 @@ export function Navbar() {
               Host a Hackathon
             </Link>
             <div className="flex gap-2 pt-2">
-              <Link href="/auth/login" className="flex-1">
-                <Button variant="outline" className="w-full bg-transparent h-11 touch-manipulation">Log in</Button>
-              </Link>
-              <Link href="/auth/register" className="flex-1">
-                <Button className="w-full h-11 touch-manipulation">Sign up</Button>
-              </Link>
+              <Button asChild variant="outline" className="flex-1 bg-transparent h-11 touch-manipulation">
+                <Link href="/auth/login">Log in</Link>
+              </Button>
+              <Button asChild className="flex-1 h-11 touch-manipulation">
+                <Link href="/auth/register">Sign up</Link>
+              </Button>
             </div>
           </div>
         </div>
